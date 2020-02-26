@@ -1,0 +1,7 @@
+drivers.lib
++iosys.obj &
++select.obj &
++bios\bios.lib &
++serial\serial.lib &
++mouse\mouse.lib
+drivers.pub;

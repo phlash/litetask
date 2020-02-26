@@ -1,0 +1,6916 @@
+diff -cBdNp e:/gnu/make/gnu/ar.c ./ar.c
+*** e:/gnu/make/gnu/ar.c	Tue Jul 24 00:52:34 1990
+--- ./ar.c	Tue Jul 24 00:53:36 1990
+*************** You should have received a copy of the G
+*** 15,27 ****
+--- 15,53 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/ar.c'v 3.58.0.2 90/07/18 10:17:58 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "file.h"
+  
+  
++ 
++ #ifdef MSDOS
++ /* Defined in zipscan.c.  */
++ extern long ar_scan (char *archive, long (*f) (int, char *, long, long, long,
++ 		     long, int, int, int, long), long arg);
++ extern long ar_name_equal (char *name, char *mem);
++ extern long ar_member_touch (char *arname, char *memname);
++ #else /* not MSDOS */
+  /* Defined in arscan.c.  */
+  extern long int ar_scan ();
+  extern int ar_member_touch ();
++ #endif /* not MSDOS */
+  
+  
+  /* Return nonzero if NAME is an archive-member reference, zero if not.
+*************** ar_member_date (name)
+*** 71,77 ****
+    /* Make sure we know the modtime of the archive itself because
+       we are likely to be called just before commands to remake a
+       member are run, and they will change the archive itself.  */
+!   (void) f_mtime (enter_file (arname));
+  
+    val = ar_scan (arname, ar_member_date_1, (long int) memname);
+  
+--- 97,103 ----
+    /* Make sure we know the modtime of the archive itself because
+       we are likely to be called just before commands to remake a
+       member are run, and they will change the archive itself.  */
+!   (void) f_mtime (enter_file (arname), 0);
+  
+    val = ar_scan (arname, ar_member_date_1, (long int) memname);
+  
+*************** ar_touch (name)
+*** 115,121 ****
+  
+    /* Make sure we know the modtime of the archive itself before we
+       touch the member, since this will change the archive itself.  */
+!   (void) f_mtime (enter_file (arname));
+  
+    val = 1;
+    switch (ar_member_touch (arname, memname))
+--- 142,148 ----
+  
+    /* Make sure we know the modtime of the archive itself before we
+       touch the member, since this will change the archive itself.  */
+!   (void) f_mtime (enter_file (arname), 0);
+  
+    val = 1;
+    switch (ar_member_touch (arname, memname))
+diff -cBdNp e:/gnu/make/gnu/commands.c ./commands.c
+*** e:/gnu/make/gnu/commands.c	Tue Jul 24 00:52:38 1990
+--- ./commands.c	Tue Jul 24 00:53:42 1990
+*************** You should have received a copy of the G
+*** 16,21 ****
+--- 16,38 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/commands.c'v 3.58.0.3 90/07/18 22:23:13 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "dep.h"
+  #include "commands.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 23,28 ****
+--- 40,49 ----
+  #include "variable.h"
+  #include "job.h"
+  
++ #ifdef MSDOS			/* really ? */
++ #define	sigmask(signal)		signal
++ #endif /* MSDOS */
++ 
+  #ifndef	sigmask
+  #define	sigmask(sig)	(1 << ((sig) - 1))
+  #endif
+*************** the Free Software Foundation, 675 Mass A
+*** 30,35 ****
+--- 51,60 ----
+  extern int remote_kill ();
+  
+  extern int getpid ();
++ 
++ #ifdef MSDOS
++ static  void set_file_variables (struct file *file);
++ #endif /* MSDOS */
+  
+  /* Set FILE's automatic variables up.  */
+  
+*************** set_file_variables (file)
+*** 171,177 ****
+  	    cF = p + 1;
+  	    Flen = len - (p - c);
+  	    cD = c;
+! 	    Dlen = (p - c) - 1;
+  	  }
+  	bcopy (cD, cDp, Dlen);
+  	cDp += Dlen;
+--- 196,202 ----
+  	    cF = p + 1;
+  	    Flen = len - (p - c);
+  	    cD = c;
+! 	    Dlen = (p - c);
+  	  }
+  	bcopy (cD, cDp, Dlen);
+  	cDp += Dlen;
+*************** execute_file_commands (file)
+*** 332,339 ****
+--- 357,368 ----
+    new_job (file);
+  }
+  
++ #ifdef MSDOS
++ #define	PROPAGATED_SIGNAL_MASK	(sigmask (SIGINT))
++ #else /* not MSDOS */
+  #define	PROPAGATED_SIGNAL_MASK \
+    (sigmask (SIGTERM) | sigmask (SIGINT) | sigmask (SIGHUP) | sigmask (SIGQUIT))
++ #endif /* not MSDOS */
+  
+  /* Handle fatal signals.  */
+  
+*************** fatal_error_signal (sig)
+*** 349,354 ****
+--- 378,384 ----
+    /* A termination signal won't be sent to the entire
+       process group, but it means we want to kill the children.  */
+  
++ #ifndef MSDOS
+    if (sig == SIGTERM)
+      {
+        register struct child *c;
+*************** fatal_error_signal (sig)
+*** 358,363 ****
+--- 388,394 ----
+  	  (void) kill (c->pid, SIGTERM);
+        unblock_children ();
+      }
++ #endif /* ! MSDOS */
+  
+    /* If we got a signal that means the user
+       wanted to kill make, remove pending targets.  */
+*************** fatal_error_signal (sig)
+*** 390,404 ****
+--- 421,441 ----
+  
+    remove_intermediates (1);
+  
++ #ifndef MSDOS
+    if (sig == SIGQUIT)
+      /* We don't want to send ourselves SIGQUIT, because it will
+         cause a core dump.  Just exit instead.  */
+      exit (1);
++ #endif /* !MSDOS */
+  
++ #ifdef MSDOS
++   abort ();
++ #else
+    /* Signal the same code; this time it will really be fatal.  */
+    if (kill (getpid (), sig) < 0)
+      /* It shouldn't return, but if it does, die anyway.  */
+      pfatal_with_name ("kill");
++ #endif /* MSDOS */
+  
+    return 0;
+  }
+diff -cBdNp e:/gnu/make/gnu/commands.h ./commands.h
+*** e:/gnu/make/gnu/commands.h	Tue Jul 24 00:52:38 1990
+--- ./commands.h	Tue Jul 24 00:53:46 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/commands.h'v 3.58.0.2 90/07/17 03:32:49 tho Exp $
++  */
++ 
+  /* Structure that gives the commands to make a file
+     and information about where these commands came from.  */
+  
+*************** struct commands
+*** 28,34 ****
+      char any_recurse;		/* Nonzero if any `lines_recurse' elt is.  */
+    };
+  
+! 
+  extern void execute_file_commands ();
+  extern void print_commands ();
+  extern void delete_child_targets ();
+--- 45,60 ----
+      char any_recurse;		/* Nonzero if any `lines_recurse' elt is.  */
+    };
+  
+! /* commands.c */
+! #ifdef MSDOS
+! extern  void chop_commands (struct commands *cmds);
+! extern  void execute_file_commands (struct file *file);
+! extern  int fatal_error_signal (int sig);
+! extern  void delete_child_targets (struct child *child);
+! extern  void print_commands (struct commands *cmds);
+! #else /* not MSDOS */
+  extern void execute_file_commands ();
+  extern void print_commands ();
+  extern void delete_child_targets ();
++ #endif /* not MSDOS */
++ 
+diff -cBdNp e:/gnu/make/gnu/default.c ./default.c
+*** e:/gnu/make/gnu/default.c	Tue Jul 24 00:52:40 1990
+--- ./default.c	Tue Jul 24 00:53:48 1990
+*************** You should have received a copy of the G
+*** 16,21 ****
+--- 16,38 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/default.c'v 3.58.0.3 90/07/18 10:42:57 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "rule.h"
+  #include "dep.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 24,29 ****
+--- 41,178 ----
+  #include "variable.h"
+  
+  
++ #if defined(MSDOS) && !defined(STRICT)
++ 
++ static char default_suffixes[] = \
++   ".com .exe .obj .c .pas .for .r .y .l .asm .h .dvi .tex .web";
++ 
++ static struct pspec default_pattern_rules[] =
++ {
++   "(%)", "%",
++   "$(ZIP) $(ZFLAGS) $@ $<",
++ 
++   0, 0, 0
++ };
++ 
++ static struct pspec default_terminal_rules[] =
++ {
++   /* RCS  */
++   "%", "%'v",
++   "$(CO) $(COFLAGS) $@",
++   "%", "RCS/%'v",
++   "$(CO) $(COFLAGS) $@",
++ 
++   "%.asm", "%.a'v",		/* kludges until we convert */
++   "$(CO) $(COFLAGS) $@",		/* RCS to prefixes ... */
++   "%.asm", "RCS/%.a'v",
++   "$(CO) $(COFLAGS) $@",
++   "%.for", "%.f'v",
++   "$(CO) $(COFLAGS) $@",
++   "%.for", "RCS/%.f'v",
++   "$(CO) $(COFLAGS) $@",
++   "%.tex", "%.t'v",
++   "$(CO) $(COFLAGS) $@",
++   "%.tex", "RCS/%.t'v",
++   "$(CO) $(COFLAGS) $@",
++   "%.web", "%.w'v",
++   "$(CO) $(COFLAGS) $@",
++   "%.web", "RCS/%.w'v",
++   "$(CO) $(COFLAGS) $@",
++ 
++   /* Backup */
++   /* we should add some rules for copying .zip archives to
++      disk, but: how to handle the ':' of the drive ? */
++ 
++   	0, 0, 0
++ };
++ 
++ static char *default_suffix_rules[] =
++ {
++   ".exe.com",
++   "$(EXE2BIN) $< $@",
++   ".obj.exe",
++   "$(LINK.s) $<;",
++ 
++   ".asm.obj",
++   "$(COMPILE.s) $<;",
++   ".c.obj",
++   "$(COMPILE.c) $<",
++   ".for.obj",
++   "$(COMPILE.f) $<",
++   ".pas.exe",
++   "$(COMPILE.p) $<",
++ 
++   ".y.c",
++   "$(YACC.y) $< \n mv -f y_tab.c $@",
++   ".l.c",
++   "$(LEX.l) $< \n mv -f lexyy.c $@",
++ 
++   ".r.for",
++   "$(PREPROCESS.r) < $< > $@",
++ 
++   ".tex.dvi",
++   "-$(TEX) $<",
++ 
++   ".web.for",			/* make it smarter about changefiles! */
++   "$(FTANGLE) $<",
++   ".web.pas",
++   "$(TANGLE) $<",
++   ".web.c",
++   "$(CTANGLE) $<",
++   ".web.tex",
++   "$(WEAVE) $<",
++ 
++   0
++ 
++ };
++ 
++ 
++ static char *default_variables[] =
++ {
++   "AR", "lib",
++   "ARFLAGS", "-+",
++   "AS", "masm",			/* might want tasm here */
++   "CC", "cl",			/* might want tcc here  */
++   "CO", "co",
++   "CPP", "$(CC) -E",
++   "FC", "fl",
++   "F77", "$(FC)",
++   "F77FLAGS", "$(FFLAGS)",
++   "LEX", "flex",
++   "LINT", "$(CC) -Zs -W4",
++   "LINTFLAGS", "$(CFLAGS)",
++   "PC", "tpc",
++   "YACC", "bison -y",
++   "TEX", "latex",
++   "WEAVE", "weave",
++   "CWEAVE", "cweave",
++   "FWEAVE", "fweave",
++   "TANGLE", "tangle",
++   "CTANGLE", "ctangle",
++   "FTANGLE", "ftangle",
++   "RAT4", "ratfor",
++   "LINK", "link",			/* might want tlink here */
++   "EXE2BIN", "exe2bin",
++   "ZIP", "pkzip",
++ 
++   "RM", "rm -f",
++ 
++   "COMPILE.c", "$(CC) $(CFLAGS) $(CPPFLAGS) -c",
++   "LINK.s", "$(LINK) $(LDFLAGS)",
++   "YACC.y", "$(YACC) $(YFLAGS)",
++   "LEX.l", "$(LEX) $(LFLAGS) -t",
++   "COMPILE.f", "$(FC) $(FFLAGS) -c",
++   "LINK.f", "$(LINK) $(LDFLAGS)",
++   "COMPILE.p", "$(PC) $(PFLAGS)",
++   "COMPILE.s", "$(AS) $(ASFLAGS)",
++   "LINT.c", "$(LINT) $(LINTFLAGS) $(CPPFLAGS)",
++   "PREPROCESS.r", "$(RAT4) $(RFLAGS)",
++ 
++   0, 0
++ };
++ 
++ #else
++ 
+  /* This is the default list of suffixes for suffix rules.
+     `.s' must come last, so that a `.o' file will be made from
+     a `.c' or `.p' or ... file rather than from a .s file.  */
+*************** static char *default_variables[] =
+*** 246,251 ****
+--- 395,403 ----
+  
+      0, 0
+    };
++ 
++ #endif /* MSDOS && !STRICT */
++ 
+  
+  /* Set up the default .SUFFIXES list.  */
+  
+diff -cBdNp e:/gnu/make/gnu/dep.h ./dep.h
+*** e:/gnu/make/gnu/dep.h	Tue Jul 24 00:52:42 1990
+--- ./dep.h	Tue Jul 24 00:53:50 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/dep.h'v 3.58.0.1 90/07/17 01:00:01 tho Exp $
++  */
++ 
+  /* Structure representing one dependency of a file.
+     Each struct file's `deps' points to a chain of these,
+     chained through the `next'.
+*************** struct nameseq
+*** 38,46 ****
+      char *name;
+    };
+  
+! 
+  extern struct nameseq *multi_glob (), *parse_file_seq ();
+! 
+  
+  #ifndef	iAPX286
+  #define dep_name(d) ((d)->name == 0 ? (d)->file->name : (d)->name)
+--- 55,67 ----
+      char *name;
+    };
+  
+! /* read.c */
+! #ifdef  MSDOS
+! extern  struct nameseq *multi_glob (struct nameseq *chain, unsigned int size);
+! extern  struct nameseq *parse_file_seq (char **stringp, char stopchar, unsigned int size);
+! #else /* not MSDOS */
+  extern struct nameseq *multi_glob (), *parse_file_seq ();
+! #endif /* not MSDOS */
+  
+  #ifndef	iAPX286
+  #define dep_name(d) ((d)->name == 0 ? (d)->file->name : (d)->name)
+diff -cBdNp e:/gnu/make/gnu/dir.c ./dir.c
+*** e:/gnu/make/gnu/dir.c	Tue Jul 24 00:52:44 1990
+--- ./dir.c	Tue Jul 24 00:53:52 1990
+*************** You should have received a copy of the G
+*** 16,23 ****
+--- 16,47 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/dir.c'v 3.58.0.1 90/07/17 00:59:03 tho Exp $
++  */
++ 
+  #include "make.h"
+  
++ #ifdef MSDOS
++ 
++ #include "msd_dir.h"
++ #define D_NAMLEN(d) ((d)->d_namlen)
++ 
++ #else /* not MSDOS */
++ 
+  #if	defined(USGr3) || defined(DIRENT)
+  
+  #include <dirent.h>
+*************** the Free Software Foundation, 675 Mass A
+*** 35,40 ****
+--- 59,65 ----
+  
+  #endif	/* USGr3 or DIRENT.  */
+  
++ #endif /* not MSDOS */
+  
+  /* Hash table of directories.  */
+  
+*************** struct dirfile
+*** 73,78 ****
+--- 98,107 ----
+  #define DIRFILE_BUCKETS 1007
+  #endif
+  
++ #ifdef MSDOS
++ static  struct directory *find_directory (char *name);
++ #endif /* MSDOS */
++ 
+  /* Find the directory named NAME and return its `struct directory'.  */
+  
+  static struct directory *
+diff -cBdNp e:/gnu/make/gnu/expand.c ./expand.c
+*** e:/gnu/make/gnu/expand.c	Tue Jul 24 00:52:46 1990
+--- ./expand.c	Tue Jul 24 00:53:54 1990
+*************** You should have received a copy of the G
+*** 16,26 ****
+--- 16,46 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/expand.c'v 3.58.0.1 90/07/17 00:59:05 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "file.h"
+  #include "variable.h"
+  
++ #ifdef MSDOS
++ static  char *recursively_expand (struct variable *v);
++ #endif /* MSDOS */
+  
+  /* Recursively expand V.  The returned string is malloc'd.  */
+  
+*************** char *
+*** 308,320 ****
+--- 328,349 ----
+  allocated_variable_expand (line)
+       char *line;
+  {
++ #ifdef MSDOS
++   return allocated_var_exp_for_file (line, (struct file *) 0);
++ #else
+    return allocated_variable_expand_for_file (line, (struct file *) 0);
++ #endif /* MSDOS */
++ 
+  }
+  
+  /* Like variable_expand_for_file, but the returned string is malloc'd.  */
+  
+  char *
++ #ifdef MSDOS
++ allocated_var_exp_for_file (line, file)
++ #else
+  allocated_variable_expand_for_file (line, file)
++ #endif /* MSDOS */
+       char *line;
+       struct file *file;
+  {
+diff -cBdNp e:/gnu/make/gnu/file.c ./file.c
+*** e:/gnu/make/gnu/file.c	Tue Jul 24 00:52:48 1990
+--- ./file.c	Tue Jul 24 00:53:58 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/file.c'v 3.58.0.3 90/07/24 00:21:16 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "dep.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 22,29 ****
+  #include "variable.h"
+  #include <errno.h>
+  
+! 
+  extern int errno;
+  
+  
+  /* Hash table of files the makefile knows how to make.  */
+--- 39,49 ----
+  #include "variable.h"
+  #include <errno.h>
+  
+! #ifdef MSDOS
+! #include <time.h>
+! #else /* not MSDOS */		/* <stdlib.h> */
+  extern int errno;
++ #endif /* not MSDOS */
+  
+  
+  /* Hash table of files the makefile knows how to make.  */
+diff -cBdNp e:/gnu/make/gnu/file.h ./file.h
+*** e:/gnu/make/gnu/file.h	Tue Jul 24 00:52:50 1990
+--- ./file.h	Tue Jul 24 00:54:00 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/file.h'v 3.58.0.1 90/07/17 01:00:03 tho Exp $
++  */
++ 
+  /* Structure that represents the info on one file
+     that the makefile says how to make.
+     All of these are chained together through `next'.  */
+*************** extern unsigned int num_intermediates;
+*** 79,89 ****
+  
+  extern struct file *default_goal_file, *suffix_file, *default_file;
+  
+! 
+  extern struct file *lookup_file (), *enter_file ();
+  extern void remove_intermediates (), snap_deps ();
+  extern void rename_file ();
+! 
+  
+  extern time_t f_mtime ();
+  #define file_mtime_1(f, v) \
+--- 96,114 ----
+  
+  extern struct file *default_goal_file, *suffix_file, *default_file;
+  
+! /*     file.c */
+! #ifdef  MSDOS
+! extern  struct file *enter_file (char *name);
+! extern  struct file *lookup_file (char *name);
+! extern  void print_file_data_base (void);
+! extern  void remove_intermediates (int sig);
+! extern  void rename_file (struct file *file, char *name);
+! extern  void snap_deps (void);
+! #else /* not MSDOS */
+  extern struct file *lookup_file (), *enter_file ();
+  extern void remove_intermediates (), snap_deps ();
+  extern void rename_file ();
+! #endif /* not MSDOS */
+  
+  extern time_t f_mtime ();
+  #define file_mtime_1(f, v) \
+diff -cBdNp e:/gnu/make/gnu/function.c ./function.c
+*** e:/gnu/make/gnu/function.c	Tue Jul 24 00:52:52 1990
+--- ./function.c	Tue Jul 24 00:54:10 1990
+*************** You should have received a copy of the G
+*** 16,21 ****
+--- 16,38 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/function.c'v 3.58.0.3 90/07/19 01:01:52 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "variable.h"
+  #include "dep.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 23,31 ****
+--- 40,80 ----
+  #include "job.h"
+  #include <errno.h>
+  
++ #ifdef MSDOS
++ #include <fcntl.h>
++ #include <io.h>
++ #include <time.h>
++ #include <process.h>
++ 
++ extern int last_child_pid;
++ extern int last_child_status;
++ 
++ extern int swap_and_spawnvpe (char *device, char *cmd, char **argv,
++ 			      char **envvec);
++ extern char *mktmpname (char *prefix);
++ 
++ struct stringlist
++   {
++     char **list;	/* Nil-terminated list of strings.  */
++     unsigned int idx;	/* Index into above.  */
++     unsigned int max;	/* Number of pointers allocated.  */
++   };
++ 
++ extern struct stringlist *swapping_device;
++ 
++ #endif /* MSDOS */
++ 
++ #ifndef MSDOS
+  extern int errno;
++ #endif /* not MSDOS */
+  
++ #ifdef MSDOS
++ static  char *expand_function (char *o, enum function function, char *text, char *end);
++ static  char *string_glob (char *line);
++ #else /* not MSDOS */
+  static char *string_glob ();
++ #endif /* not MSDOS */
++ 
+  
+  /* Store into VARIABLE_BUFFER at O the result of scanning TEXT and replacing
+     each occurrence of SUBST with REPLACE. TEXT is null-terminated.  SLEN is
+*************** expand_function (o, function, text, end)
+*** 310,315 ****
+--- 359,374 ----
+       char *text;
+       char *end;
+  {
++ #ifdef MSDOS
++   extern char **construct_command_argv ();
++   char **argv;
++   int save_stdout;
++   char *pipe_file = mktmpname ("pi");
++   int pipe_fds;
++   char *buffer = (char *) xmalloc (201);
++   unsigned int maxlen = 200;
++   int cc;
++ #endif /* MSDOS */
+    char *p, *p2, *p3;
+    unsigned int i, len;
+    int doneany = 0;
+*************** expand_function (o, function, text, end)
+*** 337,342 ****
+--- 396,470 ----
+  	else
+  	  buf[0] = '\0';
+  
++ #ifdef MSDOS
++ 
++       	argv = construct_command_argv (text, (struct file *) 0);
++ 
++ #if 0
++ 	 {
++ 	    int ac = 0;
++ 	    char **av = argv;
++ 	    printf ( "expand_function(): spawning process");
++ 	    while (*av)
++ 		printf( " $%d=`%s'", ac++, *av++);
++ 	    printf( "\n");
++ 	 }
++ #endif /* NEVER */
++ 
++ 	save_stdout = dup (1);			/* redirect stdout */
++ 	pipe_fds = open (pipe_file, O_CREAT|O_RDWR|O_TEXT, S_IREAD|S_IWRITE);
++ 	if (dup2 (pipe_fds, 1) == -1)
++ 	  pfatal_with_name ("Can't redirect /dev/stdout");
++ 
++       	last_child_pid = pid = abs ((int) clock());	/* reasonably random */
++ 
++ 	last_child_status =
++ 	  swap_and_spawnvpe (swapping_device ? swapping_device->list[0] : NULL,
++ 			    argv[0], argv, environ);
++ 
++ 	dup2 (save_stdout, 1);			/* reset stdout */
++ 	if (lseek (pipe_fds, 0L, SEEK_SET) == -1L)
++ 	  pfatal_with_name ("Can't rewind intermediate file for pipe");
++ 
++       	/* Record the PID for child_handler.  */
++       	shell_function_pid = pid;
++       	shell_function_completed = 0;
++ 
++       	/* Loop until child_handler sets shell_function_completed
++ 	   to the status of our child shell.  */
++       	while (shell_function_completed == 0)
++       		wait_for_children (1, 0);
++ 
++       	/* Read from the pipe until it gets EOF.  */
++ 
++       	i = 0;
++       	do {
++       	 	if (i == maxlen)
++ 		 {
++ 		 	maxlen += 512;
++ 		 	buffer = (char *) xrealloc (buffer, maxlen + 1);
++ 		 }
++ 
++ 		cc = read (pipe_fds, &buffer[i], maxlen - i);
++ 		if (cc > 0)
++ 		  i += cc;
++ 
++       	 } while (cc > 0);
++ 
++       	unlink(pipe_file);
++ 
++       	/* The child finished normally.  Replace all
++       	   newlines in its output with spaces, and put
++       	   that in the variable output buffer.  */
++       	for (p = buffer; p < buffer + i; ++p)
++       		if (*p == '\n')
++ 			    *p = ' ';
++ 
++       	o = variable_buffer_output (o, buffer, i);
++ 
++       	free (buffer);
++ 
++ #else
+  	if (pipe (pipedes) < 0)
+  	  {
+  	    perror_with_name (buf, "pipe");
+*************** expand_function (o, function, text, end)
+*** 429,434 ****
+--- 557,563 ----
+  
+  	    free (buffer);
+  	  }
++ #endif /* MSDOS */
+  
+  	free (text);
+  	break;
+diff -cBdNp e:/gnu/make/gnu/glob.c ./glob.c
+*** e:/gnu/make/gnu/glob.c	Tue Jul 24 00:52:54 1990
+--- ./glob.c	Tue Jul 24 00:54:14 1990
+***************
+*** 1,5 ****
+  /* File-name wildcard pattern matching for GNU.
+!    Copyright (C) 1985, 1988, 1989 Free Software Foundation, Inc.
+  
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+--- 1,5 ----
+  /* File-name wildcard pattern matching for GNU.
+!    Copyright (C) 1985, 1988, 1989, 1990 Free Software Foundation, Inc.
+  
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+***************
+*** 14,52 ****
+     You should have received a copy of the GNU General Public License
+     along with this program; if not, write to the Free Software
+     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
+  /* To whomever it may concern: I have never seen the code which most
+     Unix programs use to perform this function.  I wrote this from scratch
+     based on specifications for the pattern matching.  --RMS.  */
+  
+  #include <sys/types.h>
+  
+! #if	defined(USGr3) || defined(DIRENT)
+  
+  #include <dirent.h>
+  #define direct dirent
+! #define	D_NAMLEN(d) strlen((d)->d_name)
+! 
+! #else	/* Not USGr3 and not DIRENT.  */
+! 
+  #define D_NAMLEN(d) ((d)->d_namlen)
+! #	ifdef	USG
+! #include "ndir.h"   /* Get ndir.h from the Emacs distribution.  */
+! #	else	/* Not USG.  */
+  #include <sys/dir.h>
+! #	endif	/* USG.  */
+  
+! #endif	/* USGr3 or DIRENT.  */
+  
+! #ifdef USG
+! #include <memory.h>
+  #include <string.h>
+! #define bcopy(s, d, n) ((void) memcpy ((d), (s), (n)))
+! #define rindex	strrchr
+  
+  #else /* not USG */
+  #include <strings.h>
+- 
+  extern void bcopy ();
+  #endif /* not USG */
+  
+--- 14,86 ----
+     You should have received a copy of the GNU General Public License
+     along with this program; if not, write to the Free Software
+     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
++ 
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl, td12@ddagsi3.bitnet
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/glob.c'v 3.58.0.1 90/07/17 00:59:14 tho Exp $
++  */
+  
+  /* To whomever it may concern: I have never seen the code which most
+     Unix programs use to perform this function.  I wrote this from scratch
+     based on specifications for the pattern matching.  --RMS.  */
+  
++ #ifdef MSDOS
++ 
++ #include <stdio.h>
+  #include <sys/types.h>
++ #include <malloc.h>
++ #include "msd_dir.h"
++ #define D_NAMLEN(d) ((d)->d_namlen)
+  
+! #else /* not MSDOS */
+  
++ #if defined(USGr3) || defined(DIRENT) || defined(__GNU_LIBRARY__)
+  #include <dirent.h>
+  #define direct dirent
+! #define D_NAMLEN(d) strlen((d)->d_name)
+! #else /* not USGr3 or DIRENT or __GNU_LIBRARY__ */
+  #define D_NAMLEN(d) ((d)->d_namlen)
+! #ifdef USG
+! #ifdef SYSNDIR
+! #include <sys/ndir.h>
+! #else
+! #include "ndir.h"		/* Get ndir.h from the Emacs distribution.  */
+! #endif /* not SYSNDIR */
+! #else /* not USG */
+  #include <sys/dir.h>
+! #endif /* USG */
+! #endif /* USGr3 */
+  
+! #endif /* not MSDOS */
+  
+! #if	defined(STDC_HEADERS) || defined(__GNU_LIBRARY__)
+! #include <stdlib.h>
+  #include <string.h>
+! #define bcopy(s, d, n) memcpy ((d), (s), (n))
+! #define index strchr
+! #define rindex strrchr
+! #else
+  
++ #ifdef USG
++ #include <string.h>
++ #include <memory.h>
++ #define bcopy(s, d, n) memcpy ((d), (s), (n))
++ #define index strchr
++ #define rindex strrchr
+  #else /* not USG */
+  #include <strings.h>
+  extern void bcopy ();
+  #endif /* not USG */
+  
+***************
+*** 50,76 ****
+  extern void bcopy ();
+  #endif /* not USG */
+  
+! #ifdef	__GNUC__
+! #define	alloca(n)	__builtin_alloca (n)
+! #else	/* Not GCC.  */
+! #ifdef	sparc
+! #include <alloca.h>
+! #else	/* Not sparc.  */
+! extern char *alloca ();
+! #endif	/* sparc.  */
+! #endif	/* GCC.  */
+! 
+! extern char *malloc (), *realloc ();
+  extern void free ();
+  
+  #ifndef NULL
+  #define NULL 0
+  #endif
+  
+! /* Global variable which controls whether or not * matches .*.
+!    Non-zero means don't match .*.  */
+! int noglob_dot_filenames = 1;
+  
+  
+  static int glob_match_after_star ();
+  
+--- 84,122 ----
+  extern void bcopy ();
+  #endif /* not USG */
+  
+! extern char *malloc ();
+! extern char *realloc ();
+  extern void free ();
+  
+  #ifndef NULL
+  #define NULL 0
+  #endif
++ #endif	/* Not STDC_HEADERS or __GNU_LIBRARY__.  */
+  
+! #ifdef __GNUC__
+! #define alloca __builtin_alloca
+! #else /* Not GCC.  */
+! #ifdef sparc
+! #include <alloca.h>
+! #else /* Not sparc.  */
+! #ifndef MSDOS
+! extern char *alloca ();
+! #endif /* not MSDOS */
+! #endif /* sparc.  */
+! #endif /* GCC.  */
+! 
+! #ifdef MSDOS
+! extern  int glob_pattern_p(char *);
+! extern  int glob_match(char *,char *,int);
+! static  int glob_match_after_star(char *,char *);
+! extern  char * *glob_vector(char *,char *);
+! static  char * *glob_dir_to_array(char *,char **);
+! extern  char * *glob_filename(char *);
+! #endif /* MSDOS */
+!   
+  
++ /* Nonzero if '*' and '?' do not match an initial '.' for glob_filename.  */
++ int noglob_dot_filenames = 1;
+  
+  static int glob_match_after_star ();
+  
+*************** glob_match (pattern, text, dot_special)
+*** 151,157 ****
+  	  register char c1 = *t++;
+  	  int invert;
+  
+! 	  invert = *p == '!';
+  	  if (invert)
+  	    p++;
+  
+--- 199,209 ----
+  	  register char c1 = *t++;
+  	  int invert;
+  
+! 	  if (c1 == '\0')
+! 	    return 0;
+! 
+! 	  invert = (*p == '!');
+! 
+  	  if (invert)
+  	    p++;
+  
+*************** glob_match (pattern, text, dot_special)
+*** 166,175 ****
+  		  cend = cstart;
+  		}
+  
+! 	      if (c == '\0')
+! 		return 0;
+  
+  	      c = *p++;
+  	      if (c == '-')
+  		{
+  		  cend = *p++;
+--- 218,228 ----
+  		  cend = cstart;
+  		}
+  
+! 	      if (cstart == '\0')
+! 		return 0;	/* Missing ']'. */
+  
+  	      c = *p++;
++ 
+  	      if (c == '-')
+  		{
+  		  cend = *p++;
+*************** glob_match (pattern, text, dot_special)
+*** 191,204 ****
+  	match:
+  	  /* Skip the rest of the [...] construct that already matched.  */
+  	  while (c != ']')
+! 	    { 
+  	      if (c == '\0')
+  		return 0;
+  	      c = *p++;
+  	      if (c == '\0')
+  		return 0;
+! 	      else if (c == '\\')
+! 		++p;
+  	    }
+  	  if (invert)
+  	    return 0;
+--- 244,257 ----
+  	match:
+  	  /* Skip the rest of the [...] construct that already matched.  */
+  	  while (c != ']')
+! 	    {
+  	      if (c == '\0')
+  		return 0;
+  	      c = *p++;
+  	      if (c == '\0')
+  		return 0;
+! 	      if (c == '\\')
+! 		p++;
+  	    }
+  	  if (invert)
+  	    return 0;
+*************** glob_match_after_star (pattern, text)
+*** 234,242 ****
+    else
+      c1 = c;
+  
+    while (1)
+      {
+!       if ((c == '[' || *t == c1) && glob_match (p - 1, t, 0))
+  	return 1;
+        if (*t++ == '\0')
+  	return 0;
+--- 287,296 ----
+    else
+      c1 = c;
+  
++   --p;
+    while (1)
+      {
+!       if ((c == '[' || *t == c1) && glob_match (p, t, 0))
+  	return 1;
+        if (*t++ == '\0')
+  	return 0;
+*************** glob_match_after_star (pattern, text)
+*** 246,252 ****
+  /* Return a vector of names of files in directory DIR
+     whose names match glob pattern PAT.
+     The names are not in any particular order.
+!    Wildcards at the beginning of PAT do not match an initial period.
+  
+     The vector is terminated by an element that is a null pointer.
+  
+--- 300,307 ----
+  /* Return a vector of names of files in directory DIR
+     whose names match glob pattern PAT.
+     The names are not in any particular order.
+!    Wildcards at the beginning of PAT do not match an initial period
+!    if noglob_dot_filenames is nonzero.
+  
+     The vector is terminated by an element that is a null pointer.
+  
+*************** glob_match_after_star (pattern, text)
+*** 253,259 ****
+     To free the space allocated, first free the vector's elements,
+     then free the vector.
+  
+!    Return 0 if cannot get enough memory to hold the pointer
+     and the names.
+  
+     Return -1 if cannot access directory DIR.
+--- 308,314 ----
+     To free the space allocated, first free the vector's elements,
+     then free the vector.
+  
+!    Return NULL if cannot get enough memory to hold the pointer
+     and the names.
+  
+     Return -1 if cannot access directory DIR.
+*************** glob_vector (pat, dir)
+*** 265,274 ****
+       char *dir;
+  {
+    struct globval
+!     {
+!       struct globval *next;
+!       char *name;
+!     };
+  
+    DIR *d;
+    register struct direct *dp;
+--- 320,329 ----
+       char *dir;
+  {
+    struct globval
+!   {
+!     struct globval *next;
+!     char *name;
+!   };
+  
+    DIR *d;
+    register struct direct *dp;
+*************** glob_vector (pat, dir)
+*** 284,290 ****
+    if (d == NULL)
+      return (char **) -1;
+  
+!   lastlink = 0;
+    count = 0;
+    lose = 0;
+  
+--- 339,345 ----
+    if (d == NULL)
+      return (char **) -1;
+  
+!   lastlink = NULL;
+    count = 0;
+    lose = 0;
+  
+*************** glob_vector (pat, dir)
+*** 297,308 ****
+        dp = readdir (d);
+        if (dp == NULL)
+  	break;
+        if (dp->d_ino != 0
+  	  && glob_match (pat, dp->d_name, noglob_dot_filenames))
+  	{
+  	  nextlink = (struct globval *) alloca (sizeof (struct globval));
+  	  nextlink->next = lastlink;
+! 	  nextname = (char *) malloc (D_NAMLEN(dp) + 1);
+  	  if (nextname == NULL)
+  	    {
+  	      lose = 1;
+--- 352,368 ----
+        dp = readdir (d);
+        if (dp == NULL)
+  	break;
++ #ifdef MSDOS	/* dp->d_ino is always 0 in the MS-DOS implementation. */
++       if (glob_match (pat, dp->d_name, noglob_dot_filenames))
++ #else
+        if (dp->d_ino != 0
+  	  && glob_match (pat, dp->d_name, noglob_dot_filenames))
++ #endif /* MSDOS */
+  	{
+  	  nextlink = (struct globval *) alloca (sizeof (struct globval));
+  	  nextlink->next = lastlink;
+! 	  i = D_NAMLEN (dp) + 1;
+! 	  nextname = (char *) malloc (i);
+  	  if (nextname == NULL)
+  	    {
+  	      lose = 1;
+*************** glob_vector (pat, dir)
+*** 310,320 ****
+  	    }
+  	  lastlink = nextlink;
+  	  nextlink->name = nextname;
+! 	  bcopy (dp->d_name, nextname, D_NAMLEN(dp) + 1);
+! 	  ++count;
+  	}
+      }
+!   (void) closedir (d);
+  
+    if (!lose)
+      {
+--- 370,380 ----
+  	    }
+  	  lastlink = nextlink;
+  	  nextlink->name = nextname;
+! 	  bcopy (dp->d_name, nextname, i);
+! 	  count++;
+  	}
+      }
+!   closedir (d);
+  
+    if (!lose)
+      {
+*************** glob_vector (pat, dir)
+*** 345,352 ****
+    return name_vector;
+  }
+  
+! /* Return a new array which is the concatenation
+!    of each string in ARRAY to DIR. */
+  
+  static char **
+  glob_dir_to_array (dir, array)
+--- 405,413 ----
+    return name_vector;
+  }
+  
+! /* Return a new array, replacing ARRAY, which is the concatenation
+!    of each string in ARRAY to DIR.
+!    Return NULL if out of memory.  */
+  
+  static char **
+  glob_dir_to_array (dir, array)
+*************** glob_dir_to_array (dir, array)
+*** 353,359 ****
+       char *dir, **array;
+  {
+    register unsigned int i, l;
+!   int add_slash;
+    char **result;
+  
+    l = strlen (dir);
+--- 414,420 ----
+       char *dir, **array;
+  {
+    register unsigned int i, l;
+!   int add_slash = 0;
+    char **result;
+  
+    l = strlen (dir);
+*************** glob_dir_to_array (dir, array)
+*** 360,370 ****
+    if (l == 0)
+      return array;
+  
+!   add_slash = dir[l - 1] != '/';
+  
+!   i = 0;
+!   while (array[i] != NULL)
+!     ++i;
+  
+    result = (char **) malloc ((i + 1) * sizeof (char *));
+    if (result == NULL)
+--- 421,431 ----
+    if (l == 0)
+      return array;
+  
+!   if (dir[l - 1] != '/')
+!     add_slash++;
+  
+!   for (i = 0; array[i] != NULL; i++)
+!     ;
+  
+    result = (char **) malloc ((i + 1) * sizeof (char *));
+    if (result == NULL)
+*************** glob_dir_to_array (dir, array)
+*** 372,382 ****
+  
+    for (i = 0; array[i] != NULL; i++)
+      {
+!       result[i] = (char *) malloc (l + (add_slash ? 1 : 0)
+! 				   + strlen (array[i]) + 1);
+        if (result[i] == NULL)
+  	return NULL;
+!       sprintf (result[i], "%s%s%s", dir, add_slash ? "/" : "", array[i]);
+      }
+    result[i] = NULL;
+  
+--- 433,445 ----
+  
+    for (i = 0; array[i] != NULL; i++)
+      {
+!       result[i] = (char *) malloc (1 + l + add_slash + strlen (array[i]));
+        if (result[i] == NULL)
+  	return NULL;
+!       strcpy (result[i], dir);
+!       if (add_slash)
+! 	result[i][l] = '/';
+!       strcpy (result[i] + l + add_slash, array[i]);
+      }
+    result[i] = NULL;
+  
+*************** glob_dir_to_array (dir, array)
+*** 392,399 ****
+     marking the end of the array with a null-pointer as an element.
+     If no pathnames match, then the array is empty (first element is null).
+     If there isn't enough memory, then return NULL.
+!    If a file system error occurs, return -1; `errno' has the error code.  */
+  
+  char **
+  glob_filename (pathname)
+       char *pathname;
+--- 454,464 ----
+     marking the end of the array with a null-pointer as an element.
+     If no pathnames match, then the array is empty (first element is null).
+     If there isn't enough memory, then return NULL.
+!    If a file system error occurs, return -1; `errno' has the error code.
+  
++    Wildcards at the beginning of PAT, or following a slash,
++    do not match an initial period if noglob_dot_filenames is nonzero.  */
++ 
+  char **
+  glob_filename (pathname)
+       char *pathname;
+*************** glob_filename (pathname)
+*** 420,426 ****
+      }
+    else
+      {
+!       directory_len = filename - pathname;
+        directory_name = (char *) alloca (directory_len + 1);
+        bcopy (pathname, directory_name, directory_len);
+        directory_name[directory_len] = '\0';
+--- 485,491 ----
+      }
+    else
+      {
+!       directory_len = (filename - pathname) + 1;
+        directory_name = (char *) alloca (directory_len + 1);
+        bcopy (pathname, directory_name, directory_len);
+        directory_name[directory_len] = '\0';
+*************** glob_filename (pathname)
+*** 427,436 ****
+        ++filename;
+      }
+  
+    if (glob_pattern_p (directory_name))
+      {
+-       /* If directory_name contains globbing characters, then we
+- 	 have to expand the previous levels.  Just recurse. */
+        char **directories;
+        register unsigned int i;
+  
+--- 492,501 ----
+        ++filename;
+      }
+  
++   /* If directory_name contains globbing characters, then we
++      have to expand the previous levels.  Just recurse. */
+    if (glob_pattern_p (directory_name))
+      {
+        char **directories;
+        register unsigned int i;
+  
+*************** glob_filename (pathname)
+*** 440,446 ****
+        directories = glob_filename (directory_name);
+        if (directories == NULL)
+  	goto memory_error;
+!       else if ((int) directories == -1)
+  	return (char **) -1;
+        else if (*directories == NULL)
+  	{
+--- 505,511 ----
+        directories = glob_filename (directory_name);
+        if (directories == NULL)
+  	goto memory_error;
+!       else if (directories == (char **) -1)
+  	return (char **) -1;
+        else if (*directories == NULL)
+  	{
+*************** glob_filename (pathname)
+*** 451,462 ****
+        /* We have successfully globbed the preceding directory name.
+  	 For each name in DIRECTORIES, call glob_vector on it and
+  	 FILENAME.  Concatenate the results together.  */
+!       for (i = 0; directories[i] != NULL; ++i)
+  	{
+  	  char **temp_results = glob_vector (filename, directories[i]);
+  	  if (temp_results == NULL)
+  	    goto memory_error;
+! 	  else if ((int) temp_results == -1)
+  	    /* This filename is probably not a directory.  Ignore it.  */
+  	    ;
+  	  else
+--- 516,527 ----
+        /* We have successfully globbed the preceding directory name.
+  	 For each name in DIRECTORIES, call glob_vector on it and
+  	 FILENAME.  Concatenate the results together.  */
+!       for (i = 0; directories[i] != NULL; i++)
+  	{
+  	  char **temp_results = glob_vector (filename, directories[i]);
+  	  if (temp_results == NULL)
+  	    goto memory_error;
+! 	  else if (temp_results == (char **) -1)
+  	    /* This filename is probably not a directory.  Ignore it.  */
+  	    ;
+  	  else
+*************** glob_filename (pathname)
+*** 476,487 ****
+  	      for (l = 0; array[l] != NULL; ++l)
+  		result[result_size++ - 1] = array[l];
+  	      result[result_size - 1] = NULL;
+- 	      /* Note that the elements of ARRAY are not freed.  */
+  	      free ((char *) array);
+  	    }
+  	}
+        /* Free the directories.  */
+!       for (i = 0; directories[i]; i++)
+  	free (directories[i]);
+        free ((char *) directories);
+  
+--- 541,551 ----
+  	      for (l = 0; array[l] != NULL; ++l)
+  		result[result_size++ - 1] = array[l];
+  	      result[result_size - 1] = NULL;
+  	      free ((char *) array);
+  	    }
+  	}
+        /* Free the directories.  */
+!       for (i = 0; directories[i] != NULL; i++)
+  	free (directories[i]);
+        free ((char *) directories);
+  
+*************** glob_filename (pathname)
+*** 488,496 ****
+        return result;
+      }
+  
+    if (*filename == '\0')
+      {
+-       /* If there is only a directory name, return it.  */
+        result = (char **) realloc ((char *) result, 2 * sizeof (char *));
+        if (result == NULL)
+  	return NULL;
+--- 552,560 ----
+        return result;
+      }
+  
++   /* If there is only a directory name, return it. */
+    if (*filename == '\0')
+      {
+        result = (char **) realloc ((char *) result, 2 * sizeof (char *));
+        if (result == NULL)
+  	return NULL;
+*************** glob_filename (pathname)
+*** 509,521 ****
+  					 (directory_len == 0
+  					  ? "." : directory_name));
+  
+!       if (temp_results == NULL || (int) temp_results == -1)
+  	return temp_results;
+  
+        return glob_dir_to_array (directory_name, temp_results);
+      }
+  
+!  memory_error:;
+    if (result != NULL)
+      {
+        register unsigned int i;
+--- 573,585 ----
+  					 (directory_len == 0
+  					  ? "." : directory_name));
+  
+!       if (temp_results == NULL || temp_results == (char **) -1)
+  	return temp_results;
+  
+        return glob_dir_to_array (directory_name, temp_results);
+      }
+  
+! memory_error:;
+    if (result != NULL)
+      {
+        register unsigned int i;
+*************** main (argc, argv)
+*** 532,546 ****
+       int argc;
+       char **argv;
+  {
+!   unsigned int i;
+  
+!   for (i = 1; i < argc; ++i)
+      {
+!       char **value = glob_filename (argv[i]);
+        if (value == NULL)
+! 	puts ("Out of memory.")
+!       else if ((int) value == -1)
+! 	perror (argv[i]);
+        else
+  	for (i = 0; value[i] != NULL; i++)
+  	  puts (value[i]);
+--- 596,611 ----
+       int argc;
+       char **argv;
+  {
+!   char **value;
+!   int i, optind;
+  
+!   for (optind = 1; optind < argc; optind++)
+      {
+!       value = glob_filename (argv[optind]);
+        if (value == NULL)
+! 	puts ("virtual memory exhausted");
+!       else if (value == (char **) -1)
+! 	perror (argv[optind]);
+        else
+  	for (i = 0; value[i] != NULL; i++)
+  	  puts (value[i]);
+*************** main (argc, argv)
+*** 545,551 ****
+  	for (i = 0; value[i] != NULL; i++)
+  	  puts (value[i]);
+      }
+- 
+    exit (0);
+  }
+! #endif	/* TEST.  */
+--- 610,616 ----
+  	for (i = 0; value[i] != NULL; i++)
+  	  puts (value[i]);
+      }
+    exit (0);
+  }
+! 
+! #endif /* TEST */
+diff -cBdNp e:/gnu/make/gnu/implicit.c ./implicit.c
+*** e:/gnu/make/gnu/implicit.c	Tue Jul 24 00:52:58 1990
+--- ./implicit.c	Tue Jul 24 00:54:16 1990
+*************** You should have received a copy of the G
+*** 16,27 ****
+--- 16,48 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/implicit.c'v 3.58.0.1 90/07/17 00:59:17 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "rule.h"
+  #include "dep.h"
+  #include "file.h"
+  
++ #ifdef MSDOS
++ static  int pattern_search (struct file *file, char *name, unsigned int depth, unsigned int recursions);
++ #else /* not MSDOS */
+  static int pattern_search ();
++ #endif /* not MSDOS */
+  
+  /* For a FILE which has no commands specified, try to figure out some
+     from the implicit pattern rules.
+diff -cBdNp e:/gnu/make/gnu/job.c ./job.c
+*** e:/gnu/make/gnu/job.c	Tue Jul 24 00:53:00 1990
+--- ./job.c	Tue Jul 24 00:54:34 1990
+*************** You should have received a copy of the G
+*** 16,21 ****
+--- 16,38 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/job.c'v 3.58.0.6 90/07/22 14:31:11 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "job.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 23,29 ****
+--- 40,77 ----
+  #include "variable.h"
+  #include <errno.h>
+  
++ #ifdef MSDOS
++ #define PATHSEP	';'
++ #else
++ #define PATHSEP	':'
++ #endif
++ 
++ #ifndef MSDOS
+  extern int errno;
++ #endif /* not MSDOS */
++ 
++ #ifdef MSDOS
++ 
++ #include <time.h>
++ #include <process.h>
++ #include <io.h>
++ 
++ int last_child_pid = 0;			/* no child started yet ... */
++ int last_child_status = 0;
++ 
++ struct stringlist
++   {
++     char **list;	/* Nil-terminated list of strings.  */
++     unsigned int idx;	/* Index into above.  */
++     unsigned int max;	/* Number of pointers allocated.  */
++   };
++ 
++ extern struct stringlist *swapping_device;
++ 
++ extern int swap_and_spawnvpe (char *device, char *cmd, char **argv,
++ 			      char **envvec);
++ 
++ #endif /* MSDOS */
+  
+  #if	defined(USG) && !defined(HAVE_VFORK)
+  #define	vfork	fork
+*************** extern int wait3 ();
+*** 72,77 ****
+--- 120,129 ----
+  
+  #endif	/* WTERMSIG defined or USG and don't have <sys/wait.h>.  */
+  
++ #ifdef MSDOS
++ static char *search_path (char *file, char *path);
++ static  void child_error (char *target_name, int exit_code, int exit_sig, int coredump, int ignored);
++ #endif /* MSDOS */
+  
+  extern int dup2 ();
+  extern int fork (), wait (), execve ();
+*************** extern int geteuid (), getegid ();
+*** 82,87 ****
+--- 134,142 ----
+  #define sigmask(sig) (1 << ((sig) - 1))
+  #endif
+  
++ #ifdef MSDOS
++ #define getdtablesize() _NFILE
++ #else /* not MSDOS */
+  #ifndef USG
+  extern int getdtablesize ();
+  #else
+*************** extern int getdtablesize ();
+*** 88,93 ****
+--- 143,149 ----
+  #include <sys/param.h>
+  #define getdtablesize() NOFILE
+  #endif
++ #endif /* not MSDOS */
+  
+  extern void wait_to_start_job ();
+  extern int start_remote_job_p ();
+*************** void init_siglist ();
+*** 101,108 ****
+--- 157,170 ----
+  extern char *sys_siglist[];
+  #endif	/* USG and not HAVE_SIGLIST.  */
+  
++ #ifdef MSDOS
++ extern  int child_handler (int sig);
++ static void start_job (struct child *child);
++ static void free_child (struct child *child);
++ #else /* not MSDOS */
+  int child_handler ();
+  static void free_child (), start_job ();
++ #endif /* not MSDOS */
+  
+  /* Chain of all children.  */
+  
+*************** extern void block_remote_children (), un
+*** 148,153 ****
+--- 210,216 ----
+  void
+  block_children ()
+  {
++ #ifndef MSDOS
+  #ifdef USG
+    /* Ignoring SIGCLD makes wait always return -1.
+       Using the default action does the right thing.  */
+*************** block_children ()
+*** 155,160 ****
+--- 218,224 ----
+  #else
+    (void) sigblock (sigmask (SIGCHLD));
+  #endif
++ #endif /* ! MSDOS */
+  
+    block_remote_children ();
+  }
+*************** block_children ()
+*** 163,173 ****
+--- 227,239 ----
+  void
+  unblock_children ()
+  {
++ #ifndef MSDOS
+  #ifdef	USG
+    (void) signal (SIGCLD, child_handler);
+  #else
+    (void) sigsetmask (sigblock (0) & ~sigmask (SIGCHLD));
+  #endif
++ #endif /* ! MSDOS */
+  
+    unblock_remote_children ();
+  }
+*************** wait_for_children (n, err)
+*** 380,390 ****
+--- 446,458 ----
+  {
+    block_children ();
+  
++ #ifndef MSDOS
+    if (err && (children != 0 || shell_function_pid != 0))
+      {
+        fflush (stdout);
+        error ("*** Waiting for unfinished jobs....");
+      }
++ #endif /* not MSDOS */
+  
+    /* Call child_handler to do the work.  */
+    (void) child_handler (- (int) n);
+*************** start_job (child)
+*** 431,437 ****
+--- 499,509 ----
+        {
+  	/* Expand and run the next line.  */
+  	child->command_ptr = child->commands
++ #ifdef MSDOS
++ 	  = allocated_var_exp_for_file
++ #else
+  	  = allocated_variable_expand_for_file
++ #endif /* MSDOS */
+  	    (child->file->cmds->command_lines[child->command_line++],
+  	     child->file);
+        }
+*************** start_job (child)
+*** 536,541 ****
+--- 608,614 ----
+    
+    /* Set up a bad standard input that reads from a broken pipe.  */
+  
++ #ifndef MSDOS
+    if (bad_stdin == -1)
+      {
+        /* Make a file descriptor that is the read end of a broken pipe.
+*************** start_job (child)
+*** 549,554 ****
+--- 622,628 ----
+  	  bad_stdin = pd[0];
+  	}
+      }
++ #endif /* ! MSDOS */
+  
+    /* Decide whether to give this child the `good' standard input
+       (one that points to the terminal or whatever), or the `bad' one
+*************** start_job (child)
+*** 564,569 ****
+--- 638,675 ----
+    if (child->environment == 0)
+      child->environment = target_environment (child->file);
+  
++ #ifdef MSDOS
++ 
++   child->remote = 0;
++   child->pid = abs ((int) clock());		/* reasonably random */
++ 
++ #if (0)
++        {
++        	   int ac = 0;
++        	   char **av = argv;
++        	   printf ( "start_job(): spawning process");
++        	   while (*av)
++        		printf( " $%d=`%s'", ac++, *av++);
++        	   printf( "\n");
++        }
++ #endif /* NEVER */
++ 
++   /* LAST_CHILD_STATUS and LAST_CHILD_PID will be used by our
++      (faked) wait for MS-DOS to bury this 'child' */
++ 
++   last_child_status
++     = swap_and_spawnvpe (swapping_device ? swapping_device->list[0] : NULL,
++ 			argv[0], argv, child->environment);
++ 
++   last_child_pid = child->pid;
++ 
++   if (last_child_status == -1)
++ 	pfatal_with_name ("vm_spawnvp");
++ 
++   child->file->command_state = cs_running;	/* in *some* sense ...  */
++ 
++ #else /* not MSDOS */
++ 
+    if (start_remote_job_p ())
+      {
+        int is_remote, id, used_stdin;
+*************** start_job (child)
+*** 608,613 ****
+--- 714,722 ----
+       say the commands are running and return.  */
+  
+    child->file->command_state = cs_running;
++ 
++ #endif /* not MSDOS */
++ 
+    return;
+  
+   error:;
+*************** new_job (file)
+*** 679,684 ****
+--- 788,794 ----
+      }
+  }
+  
++ #ifndef MSDOS
+  /* Replace the current process with one executing the command in ARGV.
+     STDIN_FD and STDOUT_FD are used as the process's stdin and stdout;
+     FILE, if not nil, is used as the variable-set to expand `PATH' and `SHELL';
+*************** child_execute_job (stdin_fd, stdout_fd, 
+*** 711,716 ****
+--- 821,827 ----
+  		allocated_variable_expand_for_file ("$(PATH)", file),
+  		allocated_variable_expand_for_file ("$(SHELL)", file));
+  }
++ #endif /* not MSDOS */
+  
+  /* Search PATH for FILE, returning a full pathname or nil.
+     The returned pathname is allocated via `malloc'.  */
+*************** search_path (file, path)
+*** 742,748 ****
+  	  int perm;
+  	  char *p;
+  
+! 	  p = index (path, ':');
+  	  if (p == 0)
+  	    p = path + strlen (path);
+  
+--- 853,859 ----
+  	  int perm;
+  	  char *p;
+  
+! 	  p = index (path, PATHSEP);
+  	  if (p == 0)
+  	    p = path + strlen (path);
+  
+*************** search_path (file, path)
+*** 758,763 ****
+--- 869,877 ----
+  	  if (stat (program, &st) == 0
+  	      && (st.st_mode & S_IFMT) == S_IFREG)
+  	    {
++ #ifdef MSDOS			/* we always have permission */
++ 	      return program;
++ #else /* not MSDOS */
+  	      if (st.st_uid == geteuid ())
+  		perm = (st.st_mode & 0100);
+  	      else if (st.st_gid == getegid ())
+*************** search_path (file, path)
+*** 778,783 ****
+--- 892,898 ----
+  
+  	      if (perm != 0)
+  		return program;
++ #endif /* not MSDOS */
+  	    }
+  
+  	  path = p + 1;
+*************** search_path (file, path)
+*** 787,792 ****
+--- 902,908 ----
+    return 0;
+  }
+  
++ #ifndef MSDOS
+  /* Replace the current process with one running the command in ARGV,
+     with environment ENVP.  The program named in ARGV[0] is searched
+     for in PATH.  SHELL is the shell program to run for shell scripts.
+*************** exec_command (argv, envp, path, shell)
+*** 840,845 ****
+--- 956,962 ----
+  
+    _exit (127);
+  }
++ #endif /* not MSDOS */
+  
+  /* Figure out the argument list necessary to run LINE as a command.
+     Try to avoid using a shell.  This routine handles only ' quoting.
+*************** construct_command_argv (line, file)
+*** 855,866 ****
+       char *line;
+       struct file *file;
+  {
+-   static char sh_chars[] = "#;\"*?[]&|<>(){}=$`";
+-   static char *sh_cmds[] = { "cd", "eval", "exec", "exit", "login",
+- 			     "logout", "set", "umask", "wait", "while", "for",
+- 			     "case", "if", ":", ".", "break", "continue",
+- 			     "export", "read", "readonly", "shift", "times",
+- 			     "trap", "switch", 0 };
+    register int i;
+    register char *p;
+    register char *ap;
+--- 972,977 ----
+*************** construct_command_argv (line, file)
+*** 868,877 ****
+--- 979,1067 ----
+    int instring;
+    char **new_argv = 0;
+  
++ #ifdef MSDOS
++ 
++   char *sh_chars;
++   char **sh_cmds;
++   char *base;
++   char *shell_command;
++   char switch_char = '/';
++ 
++   static char _sh_chars[]
++     = "#;\"*?[]&|<>(){}=$`";
++   static char *_sh_cmds[]
++     = {	"cd", "echo", "eval", "exec", "exit", "login", "logout", "set",
++ 	"umask", "wait", "while", "for", "case", "if", ":", ".", "break",
++ 	"continue", "export", "read", "readonly", "shift", "times",
++ 	"trap", "switch", NULL };
++ 
++   static char _4dos_chars[]
++     = "<|>^&%";
++   static char *_4dos_cmds[]
++     = {	"alias", "attrib", "beep", "cd", "cdd", "chdir", "copy", "del",
++ 	"dir", "echo", "erase", "except", "for", "global", "if", "iff",
++ 	"keystack", "md", "move", "popd", "pushd", "rd", "ren", "rename",
++ 	"set", "timer", "unalias", "unset", NULL };
++ 
++   static char _command_com_chars[]
++     = "<|>%";
++   static char *_command_com_cmds[]
++     = { "attrib", "cd", "chdir", "copy", "del", "dir", "echo", "erase",
++ 	"for", "if", "md", "quit", "rd", "ren", "rename", "set", "unset",
++ 	NULL };
++ 
++ 
++   /* See if it is safe to parse commands internally.  */
++ 
++   /* $(SHELL) is always defined (see variable.c)  */
++   p = base = shell_command
++     = strlwr (allocated_var_exp_for_file ("$(SHELL)", file));
++ 
++   while (*p)
++     {
++       if ((*p == '/' || *p == '\\' || *p == ':') && p[1])
++ 	base = p + 1;
++       p++;
++     }
++ 
++   if (!strncmp ("sh", base, 2))
++     {
++       sh_chars = _sh_chars;
++       sh_cmds = _sh_cmds;
++       switch_char = '/';	/* this is true for by Bourne shell */
++     }
++   else if (!strncmp ("4dos", base, 4))
++     {
++       sh_chars = _4dos_chars;
++       sh_cmds = _4dos_cmds;
++     }
++   else if (!strncmp ("command", base, 7))
++     {
++       sh_chars = _command_com_chars;
++       sh_cmds = _command_com_cmds;
++     }
++   else
++     {
++       free (shell_command);
++       goto slow;
++     }
++ 
++ #else /* not MSDOS */
++ 
++   static char sh_chars[] = "#;\"*?[]&|<>(){}=$`";
++   static char *sh_cmds[] = { "cd", "eval", "exec", "exit", "login",
++ 			     "logout", "set", "umask", "wait", "while", "for",
++ 			     "case", "if", ":", ".", "break", "continue",
++ 			     "export", "read", "readonly", "shift", "times",
++ 			     "trap", "switch", 0 };
++ 
+    /* See if it is safe to parse commands internally.  */
+    p = variable_expand_for_file ("$(SHELL)", file);
+    if (strcmp (p, "/bin/sh"))
+      goto slow;
++ 
++ #endif /* not MSDOS */
++ 
+    p = variable_expand_for_file ("$(IFS)", file);
+    for (ap = p; *ap != '\0'; ++ap)
+      if (*ap != ' ' && *ap != '\t' && *ap != '\n')
+*************** construct_command_argv (line, file)
+*** 966,973 ****
+--- 1156,1168 ----
+    if (new_argv != 0)
+      free (new_argv);
+    new_argv = (char **) xmalloc (4 * sizeof (char *));
++ #ifdef MSDOS
++   new_argv[0] = allocated_var_exp_for_file ("$(SHELL)", file);
++   new_argv[1] = (switch_char == '-') ? "-c" : "/c";
++ #else /* not MSDOS */
+    new_argv[0] = allocated_variable_expand_for_file ("$(SHELL)", file);
+    new_argv[1] = "-c";
++ #endif /* not MSDOS */
+    new_argv[2] = line;
+    new_argv[3] = 0;
+  
+*************** init_siglist ()
+*** 990,1001 ****
+--- 1185,1199 ----
+  	sprintf (buf, "Signal %u", i);
+  	sys_siglist[i] = savestring (buf, strlen (buf));
+  	break;
++ #ifndef MSDOS
+        case SIGHUP:
+  	sys_siglist[i] = "Hangup";
+  	break;
++ #endif /* ! MSDOS */
+        case SIGINT:
+  	sys_siglist[i] = "Interrupt";
+  	break;
++ #ifndef MSDOS
+        case SIGQUIT:
+  	sys_siglist[i] = "Quit";
+  	break;
+*************** init_siglist ()
+*** 1008,1013 ****
+--- 1206,1212 ----
+        case SIGIOT:
+  	sys_siglist[i] = "IOT Trap";
+  	break;
++ #endif /* ! MSDOS */
+  #ifdef	SIGEMT
+        case SIGEMT:
+  	sys_siglist[i] = "EMT Trap";
+*************** init_siglist ()
+*** 1021,1026 ****
+--- 1220,1226 ----
+        case SIGFPE:
+  	sys_siglist[i] = "Floating Point Exception";
+  	break;
++ #ifndef MSDOS
+        case SIGKILL:
+  	sys_siglist[i] = "Killed";
+  	break;
+*************** init_siglist ()
+*** 1048,1053 ****
+--- 1248,1254 ----
+        case SIGUSR2:
+  	sys_siglist[i] = "User-defined signal 2";
+  	break;
++ #endif /* ! MSDOS */
+  #ifdef	SIGCLD
+        case SIGCLD:
+  #endif
+*************** init_siglist ()
+*** 1125,1131 ****
+  }
+  #endif	/* USG and not HAVE_SIGLIST.  */
+  
+! #if	defined(USG) && !defined(USGr3) && !defined(HAVE_DUP2)
+  int
+  dup2 (old, new)
+       int old, new;
+--- 1326,1332 ----
+  }
+  #endif	/* USG and not HAVE_SIGLIST.  */
+  
+! #if defined(USG) && !defined(USGr3) && !defined(HAVE_DUP2) && !defined (MSDOS)
+  int
+  dup2 (old, new)
+       int old, new;
+*************** dup2 (old, new)
+*** 1143,1146 ****
+  
+    return fd;
+  }
+! #endif	/* USG and not USGr3 and not HAVE_DUP2.  */
+--- 1344,1363 ----
+  
+    return fd;
+  }
+! #endif	/* USG and not USGr3 and not HAVE_DUP2 and not MSDOS.  */
+! 
+! #ifdef MSDOS
+! 
+! /* fake a wait ... */
+! 
+! int
+! wait (WAIT_T *status)
+!  {
+!    int temp = last_child_pid;		/* the last child we spawned */
+!    *status = last_child_status << 8;	/* it's return code (not a signal) */
+!    last_child_pid = 0;			/* the only child ... */
+!    return temp;
+!  }
+! 
+! #endif	/* MSDOS */
+! 
+diff -cBdNp e:/gnu/make/gnu/job.h ./job.h
+*** e:/gnu/make/gnu/job.h	Tue Jul 24 00:53:02 1990
+--- ./job.h	Tue Jul 24 00:54:36 1990
+***************
+*** 1,3 ****
+--- 1,20 ----
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/job.h'v 3.58.0.2 90/07/17 03:32:50 tho Exp $
++  */
++ 
+  /* Structure describing a running or dead child process.  */
+  
+  struct child
+*************** struct child
+*** 23,31 ****
+--- 40,59 ----
+  
+  extern struct child *children;
+  
++ #ifdef MSDOS
++ extern  int _cdecl wait (int *status);
++ extern  void new_job (struct file *file);
++ extern  void block_children (void);
++ extern  void unblock_children (void);
++ #else /* not MSDOS */
+  extern void new_job ();
+  extern void wait_for_children ();
+  extern void block_children (), unblock_children ();
++ #endif /* not MSDOS */
++ 
++ #ifdef MSDOS
++ extern  void exec_command (char **argv, char **envp, char *path, char *shell);
++ #endif /* MSDOS */
+  
+  extern char **construct_command_argv ();
+  extern void child_execute_job ();
+diff -cBdNp e:/gnu/make/gnu/load.c ./load.c
+*** e:/gnu/make/gnu/load.c	Tue Jul 24 00:53:04 1990
+--- ./load.c	Tue Jul 24 00:54:38 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/load.c'v 3.58.0.1 90/07/17 00:59:28 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "job.h"
+*************** load_average ()
+*** 134,145 ****
+--- 151,165 ----
+  #define LDAV_CVT ((double) load)
+  #endif
+  
++ #ifndef MSDOS
+  #include <nlist.h>
++ #include <nlist.h>
+  #ifdef	NLIST_NAME_UNION
+  #define	nl_name	n_un.n_name
+  #else
+  #define	nl_name	n_name
+  #endif
++ #endif /* not MSDOS */
+  
+  #ifdef	USG
+  #include <fcntl.h>
+diff -cBdNp e:/gnu/make/gnu/main.c ./main.c
+*** e:/gnu/make/gnu/main.c	Tue Jul 24 00:53:06 1990
+--- ./main.c	Tue Jul 24 00:54:50 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/main.c'v 3.58.0.6 90/07/22 18:55:19 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "dep.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 24,29 ****
+--- 41,53 ----
+  #include <ctype.h>
+  #include <time.h>
+  
++ #ifdef MSDOS
++ #include <process.h>
++ extern char *msdos_version_string;
++ extern int swap_and_spawnvpe (char *device, char *cmd, char **argv,
++ 			      char **envvec);
++ extern char *msdos_format_filename (char *name);
++ #endif /* MSDOS */
+  
+  extern char *version_string;
+  
+*************** extern void print_rule_data_base ();
+*** 37,42 ****
+--- 61,70 ----
+  extern void print_file_data_base ();
+  extern void print_vpath_data_base ();
+  
++ #ifdef MSDOS
++ #include <direct.h>
++ #include <io.h>
++ #else /* not MSDOS */
+  extern int chdir ();
+  extern void exit ();
+  extern long int atol ();
+*************** extern long int atol ();
+*** 43,54 ****
+  extern time_t time ();
+  extern int mktemp ();
+  extern double atof ();
+  
+  static void log_working_directory ();
+  static void print_data_base (), print_version ();
+  static void decode_switches (), decode_env_switches ();
+  static void define_makeflags ();
+! 
+  
+  #if 0 /* dummy tag */
+  flags () {}
+--- 71,92 ----
+  extern time_t time ();
+  extern int mktemp ();
+  extern double atof ();
++ #endif /* not MSDOS */
+  
++ #ifdef MSDOS
++ extern  int main (int argc, char **argv, char **envp);
++ static  void decode_switches (int argc, char **argv);
++ static  void decode_env_switches (char *envar, unsigned int len);
++ static  void define_makeflags (int pf);
++ static  void print_version (void);
++ static  void print_data_base (void);
++ static  void log_working_directory (int entering);
++ #else /* not MSDOS */
+  static void log_working_directory ();
+  static void print_data_base (), print_version ();
+  static void decode_switches (), decode_env_switches ();
+  static void define_makeflags ();
+! #endif /* not MSDOS */
+  
+  #if 0 /* dummy tag */
+  flags () {}
+*************** static struct stringlist *old_files = 0;
+*** 206,211 ****
+--- 244,256 ----
+  
+  static struct stringlist *new_files = 0;
+  
++ #ifdef MSDOS
++ /* String describing the swapping mode to be used.
++    (one of "xms, ems, disk, none") */
++  
++ struct stringlist *swapping_device = NULL;
++ #endif /* MSDOS */
++ 
+  /* The table of command switches.  */
+  
+  static struct command_switch switches[] =
+*************** static struct command_switch switches[] 
+*** 234,239 ****
+--- 279,287 ----
+      { 'v', flag, (char *) &print_version_flag, 0, 0, 0, 0 },
+      { 'w', flag, (char *) &print_directory_flag, 1, 1, 0, 0 },
+      { 'W', string, (char *) &new_files, 0, 0, 0, 0 },
++ #ifdef MSDOS
++     { 'x', string, (char *) &swapping_device, 0, 0, 0, 0 },
++ #endif /* MSDOS */
+      { '\0', ignore, 0, 0, 0, 0 }
+    };
+  
+*************** struct file *default_goal_file;
+*** 261,266 ****
+--- 309,322 ----
+     This is zero if the makefiles do not define .DEFAULT.  */
+  
+  struct file *default_file;
++ 
++ #ifdef MSDOS
++ /* Under MS-DOS the current directory is not local to the process,
++    so we have to find means to back up somehow.  */
++ 
++ char current_directory[MAXPATHLEN];
++ #endif /* MSDOS */
++ 
+  
+  int
+  main (argc, argv, envp)
+*************** main (argc, argv, envp)
+*** 282,289 ****
+--- 338,348 ----
+    struct dep *goals = 0;
+    register struct dep *lastgoal;
+    struct dep *read_makefiles;
++ #ifndef MSDOS			/* see above */
+    char current_directory[MAXPATHLEN];
++ #endif /* not MSDOS */
+  
++ 
+    default_goal_file = 0;
+    reading_filename = 0;
+    reading_lineno_ptr = 0;
+*************** main (argc, argv, envp)
+*** 292,303 ****
+--- 351,365 ----
+    init_siglist ();
+  #endif
+  
++ #ifndef MSDOS
+    if (signal (SIGHUP, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGHUP, SIG_IGN);
+    if (signal (SIGQUIT, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGQUIT, SIG_IGN);
++ #endif /* ! MSDOS */
+    if (signal (SIGINT, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGINT, SIG_IGN);
++ #ifndef MSDOS
+    if (signal (SIGILL, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGILL, SIG_IGN);
+    if (signal (SIGTRAP, fatal_error_signal) == SIG_IGN)
+*************** main (argc, argv, envp)
+*** 304,309 ****
+--- 366,372 ----
+      (void) signal (SIGTRAP, SIG_IGN);
+    if (signal (SIGIOT, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGIOT, SIG_IGN);
++ #endif /* ! MSDOS */
+  #ifdef	SIGEMT
+    if (signal (SIGEMT, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGEMT, SIG_IGN);
+*************** main (argc, argv, envp)
+*** 314,319 ****
+--- 377,383 ----
+  #endif
+    if (signal (SIGFPE, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGFPE, SIG_IGN);
++ #ifndef MSDOS
+    if (signal (SIGBUS, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGBUS, SIG_IGN);
+    if (signal (SIGSEGV, fatal_error_signal) == SIG_IGN)
+*************** main (argc, argv, envp)
+*** 322,327 ****
+--- 386,392 ----
+      (void) signal (SIGSYS, SIG_IGN);
+    if (signal (SIGTERM, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGTERM, SIG_IGN);
++ #endif /* ! MSDOS */
+  #ifdef SIGXCPU
+    if (signal (SIGXCPU, fatal_error_signal) == SIG_IGN)
+      (void) signal (SIGXCPU, SIG_IGN);
+*************** main (argc, argv, envp)
+*** 333,339 ****
+  
+    /* Make sure stdout is line-buffered.  */
+  
+! #if	defined(USGr3) || defined(HPUX) || defined(hpux)
+    setvbuf (stdout, (char *) 0, _IOLBF, BUFSIZ);
+  #else	/* Not USGr3 and not HPUX.  */
+  #ifdef	USG
+--- 398,404 ----
+  
+    /* Make sure stdout is line-buffered.  */
+  
+! #if	defined(USGr3) || defined(HPUX) || defined(hpux) || defined (MSDOS)
+    setvbuf (stdout, (char *) 0, _IOLBF, BUFSIZ);
+  #else	/* Not USGr3 and not HPUX.  */
+  #ifdef	USG
+*************** main (argc, argv, envp)
+*** 345,350 ****
+--- 410,419 ----
+  
+    /* Figure out where this program lives.  */
+  
++ #ifdef MSDOS			/* cosmetics */
++   msdos_format_filename (argv[0]);
++ #endif /* MSDOS */
++ 
+    if (argv[0] == 0)
+      argv[0] = "";
+    if (argv[0][0] == '\0')
+*************** main (argc, argv, envp)
+*** 366,372 ****
+--- 435,445 ----
+  #endif
+    if (getwd (current_directory) == 0)
+      {
++ #ifdef MSDOS
++       error ("getwd: %s", msdos_format_filename (current_directory));
++ #else /* not MSDOS */
+        error ("getwd: %s", current_directory);
++ #endif /* not MSDOS */
+        current_directory[0] = '\0';
+      }
+  #ifdef	USG
+*************** main (argc, argv, envp)
+*** 470,477 ****
+--- 543,555 ----
+       Append the command-line variable definitions gathered above
+       so sub-makes will get them as command-line definitions.  */
+  
++ #ifdef MSDOS
++   if (current_directory[0] != '\0' && argv[0] != 0
++   && argv[0][1] != ':' && argv[0][0] != '/' && index (argv[0], '/') != 0)
++ #else /* not MSDOS */
+    if (current_directory[0] != '\0'
+        && argv[0] != 0 && argv[0][0] != '/' && index (argv[0], '/') != 0)
++ #endif /* not MSDOS */
+      argv[0] = concat (current_directory, "/", argv[0]);
+  
+    if (cmd_defs_idx > 0)
+*************** main (argc, argv, envp)
+*** 520,526 ****
+--- 598,608 ----
+  	    /* This makefile is standard input.  Since we may re-exec
+  	       and thus re-read the makefiles, we read standard input
+  	       into a temporary file and read from that.  */
++ #ifdef MSDOS		/* Can't use $TMP, sice it may contain a `:'  */
++ 	    static char name[] = "./GmXXXXXX";
++ #else /* not MSDOS */
+  	    static char name[] = "/tmp/GmXXXXXX";
++ #endif /* not MSDOS */
+  	    FILE *outfile;
+  
+  	    /* Free the storage allocated for "-".  */
+*************** main (argc, argv, envp)
+*** 562,572 ****
+--- 644,656 ----
+    /* Set up to handle children dying.  This must be done before
+       reading in the makefiles so that `shell' function calls will work.  */
+  
++ #ifndef MSDOS
+  #ifdef SIGCHLD
+    (void) signal (SIGCHLD, child_handler);
+  #else
+    (void) signal (SIGCLD, child_handler);
+  #endif
++ #endif /* ! MSDOS */
+  
+    /* Install the default implicit rules.  */
+  
+*************** main (argc, argv, envp)
+*** 824,832 ****
+--- 908,921 ----
+  		sprintf (*p, "MAKELEVEL=%u", makelevel);
+  		break;
+  	      }
++ #ifdef MSDOS		/* MSC'c execve () will fail with our spawn(). */
++ 	  exit (swap_and_spawnvpe (swapping_device
++ 		? swapping_device->list[0] : NULL, argv[0], argv, environ));
++ #else /* not MSDOS */
+  	  exec_command (argv, environ,
+  			allocated_variable_expand ("$(PATH)"),
+  			allocated_variable_expand ("$(SHELL)"));
++ #endif /* not MSDOS */
+  	  /* NOTREACHED */
+  	}
+      }
+*************** print_version ()
+*** 1235,1240 ****
+--- 1324,1335 ----
+  %sThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A\n\
+  %sPARTICULAR PURPOSE.\n\n", precede, precede, precede, precede);
+  
++ #ifdef MSDOS
++   printf ("%sMS-DOS port (C) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>\n\
++ %sthis is an alpha version, compiled %s.\n\n",
++ 	  precede, precede, msdos_version_string);
++ #endif /* MSDOS */
++ 
+    printed_version = 1;
+  
+    /* Flush stdout so the user doesn't have to wait to see the
+*************** die (status)
+*** 1289,1294 ****
+--- 1384,1410 ----
+  	log_working_directory (0);
+      }
+  
++ #ifdef MSDOS
++   if (directories != 0 && directories->idx > 0)
++     {
++       char bad;
++       if (current_directory[0] != '\0')
++ 	{
++ 	  if (chdir (current_directory) < 0)
++ 	    {
++ 	      perror_with_name ("chdir", "");
++ 	      bad = 1;
++ 	    }
++ 	  else
++ 	    bad = 0;
++ 	}
++       else
++ 	bad = 1;
++       if (bad)
++ 	fatal ("Couldn't change back to original directory.");
++     }
++ #endif / MSDOS */
++ 
+    exit (status);
+  }
+  
+*************** log_working_directory (entering)
+*** 1323,1331 ****
+--- 1439,1454 ----
+    block_children ();
+  #endif
+    if (getwd (pwdbuf) == 0)
++ #ifdef MSDOS
++     printf ("an unknown directory (getwd: %s)\n",
++ 	    msdos_format_filename (pwdbuf));
++   else
++     printf ("directory `%s'\n", msdos_format_filename (pwdbuf));
++ #else /* not MSDOS */
+      printf ("an unknown directory (getwd: %s)\n", pwdbuf);
+    else
+      printf ("directory `%s'\n", pwdbuf);
++ #endif /* not MSDOS */
+  #ifdef	USG
+    unblock_children ();
+  #endif
+diff -cBdNp e:/gnu/make/gnu/make.h ./make.h
+*** e:/gnu/make/gnu/make.h	Tue Jul 24 00:53:08 1990
+--- ./make.h	Tue Jul 24 00:54:54 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/make.h'v 3.58.0.2 90/07/17 03:32:52 tho Exp $
++  */
++ 
+  #include <signal.h>
+  #include <stdio.h>
+  
+*************** the Free Software Foundation, 675 Mass A
+*** 22,28 ****
+--- 39,48 ----
+  #include <sys/types.h>
+  #endif
+  
++ 
++ #ifndef MSDOS
+  #include <sys/param.h>
++ #endif /* not MSDOS */
+  #ifndef MAXPATHLEN
+  #define MAXPATHLEN 1024
+  #endif	/* No MAXPATHLEN.  */
+*************** extern void bzero (), bcopy ();
+*** 53,59 ****
+--- 73,83 ----
+  #ifdef	sparc
+  #include <alloca.h>
+  #else	/* Not sparc.  */
++ #ifdef MSDOS
++ #include <malloc.h>
++ #else /* not MSDOS */
+  extern char *alloca ();
++ #endif /* not MSDOS  */
+  #endif	/* sparc.  */
+  #endif	/* GCC.  */
+  
+*************** extern char *alloca ();
+*** 76,82 ****
+--- 100,133 ----
+  #define	ENUM_BITFIELD(bits)
+  #endif
+  
++ #ifdef MSDOS
++ extern  void die (int status);
++ #else /* not MSDOS */
+  extern void die ();
++ #endif /* not MSDOS */
++ 
++ /*     misc.c */
++ #ifdef MSDOS
++ extern  char *concat (char *s1, char *s2, char *s3);
++ extern  char *end_of_token (char *s);
++ extern  char *find_next_token (char **ptr, unsigned int *lengthptr);
++ extern  char *lindex (char *s, char *limit, int c);
++ extern  char *next_token (char *s);
++ extern  char *savestring (char *str, unsigned int length);
++ extern  char *sindex (char *big, unsigned int blen, char *small,
++ 		      unsigned int slen);
++ extern  char *xmalloc (unsigned int size);
++ extern  char *xrealloc (char *ptr, unsigned int size);
++ extern  int alpha_compare (char **s1, char **s2);
++ extern  struct dep *copy_dep_chain (struct dep *d);
++ extern  void collapse_continuations (char *line);
++ extern  void collapse_line (char *line);
++ extern  void error (char *s1, ...);
++ extern  void fatal (char *s1, ...);
++ extern  void perror_with_name (char *str, char *name);
++ extern  void pfatal_with_name (char *name);
++ extern  void print_spaces (unsigned int n);
++ #else /* not MSDOS */
+  extern void fatal (), error ();
+  extern void pfatal_with_name (), perror_with_name ();
+  extern char *savestring (), *concat ();
+*************** extern int alpha_compare ();
+*** 88,121 ****
+  extern void print_spaces ();
+  extern struct dep *copy_dep_chain ();
+  extern char *find_percent ();
+  
+  #ifndef	NO_ARCHIVES
+  extern int ar_name ();
+  extern int ar_touch ();
+  extern time_t ar_member_date ();
+  #endif
+  
+  extern void dir_load ();
+  extern int dir_file_exists_p (), file_exists_p (), file_impossible_p ();
+  extern void file_impossible ();
+  extern char *dir_name ();
+  
+  extern void set_default_suffixes (), install_default_implicit_rules ();
+  extern void convert_to_pattern (), count_implicit_rule_limits ();
+  extern void create_pattern_rule ();
+  
+  extern void build_vpath_lists (), construct_vpath_list ();
+  extern int vpath_search ();
+! 
+  extern void construct_include_path ();
+  
+  extern int update_goal_chain ();
+  extern void notice_finished_file ();
+! 
+  
+  extern int glob_pattern_p ();
+  extern char **glob_filename ();
+  
+  #ifndef	USG
+  extern int sigsetmask ();
+  #endif
+--- 139,248 ----
+  extern void print_spaces ();
+  extern struct dep *copy_dep_chain ();
+  extern char *find_percent ();
++ #endif /* not MSDOS */
+  
++ /* ar.c */
+  #ifndef	NO_ARCHIVES
++ #ifdef MSDOS
++ extern  int ar_name (char *name);
++ extern  int ar_touch (char *name);
++ extern  long ar_member_date (char *name);
++ #else /* not MSDOS */
+  extern int ar_name ();
+  extern int ar_touch ();
+  extern time_t ar_member_date ();
++ #endif /* not MSDOS */
+  #endif
+  
++ /* dir.c */
++ #ifdef MSDOS
++ extern  char *dir_name (char *dir);
++ extern  int dir_file_exists_p (char *dirname, char *filename);
++ extern  int file_exists_p (char *name);
++ extern  int file_impossible_p (char *filename);
++ extern  void file_impossible (char *filename);
++ extern  void print_dir_data_base (void);
++ #else /* not MSDOS */
+  extern void dir_load ();
+  extern int dir_file_exists_p (), file_exists_p (), file_impossible_p ();
+  extern void file_impossible ();
+  extern char *dir_name ();
++ #endif /* not MSDOS */
+  
++ /* default.c */
++ #ifdef MSDOS
++ extern  void install_default_implicit_rules (void);
++ extern  void set_default_suffixes (void);
++ #else /* not MSDOS */
+  extern void set_default_suffixes (), install_default_implicit_rules ();
++ #endif /* not MSDOS */
++ 
++ /* rule.c */
++ #ifdef MSDOS
++ extern  void convert_to_pattern (void);
++ extern  void count_implicit_rule_limits (void);
++ extern  void create_pattern_rule (char **targets, char **target_percents,
++ 				  int terminal, struct dep *deps,
++ 				  struct commands *commands, int override);
++ extern  void print_rule_data_base (void);
++ #else /* not MSDOS */
+  extern void convert_to_pattern (), count_implicit_rule_limits ();
+  extern void create_pattern_rule ();
++ #endif /* not MSDOS */
+  
++ /*    vpath.c */
++ #ifdef MSDOS
++ extern  int vpath_search (char **file);
++ extern  void build_vpath_lists (void);
++ extern  void construct_vpath_list (char *pattern, char *dirpath);
++ extern  void print_vpath_data_base (void);
++ #else /* not MSDOS */
+  extern void build_vpath_lists (), construct_vpath_list ();
+  extern int vpath_search ();
+! #endif /* not MSDOS */
+!   
+! /*     read.c */
+! #ifdef MSDOS
+! extern  char *find_percent (char *pattern);
+! extern  struct dep *read_all_makefiles (char **makefiles);
+! extern  void uniquize_deps (struct dep *chain);
+! extern  void construct_include_path (char **arg_dirs);
+! #else /* not MSDOS */
+  extern void construct_include_path ();
++ #endif /* not MSDOS */
+  
++ /*   remake.c */
++ #ifdef MSDOS
++ extern  int update_goal_chain (struct dep *goals, int makefiles);
++ extern  void notice_finished_file (struct file *file);
++ extern  time_t f_mtime (struct file *file, int search);
++ extern  int remote_kill (int id, int sig);
++ extern  int remote_status (int *exit_code_ptr, int *signal_ptr,
++ 			   int *coredump_ptr, int block);
++ extern  int start_remote_job (char **argv, int stdin_fd, int *is_remote,
++ 			      int *id_ptr, int *used_stdin);
++ extern  int start_remote_job_p (void);
++ extern  void block_remote_children (void);
++ extern  void unblock_remote_children (void);
++ #else /* not MSDOS */
+  extern int update_goal_chain ();
+  extern void notice_finished_file ();
+! #endif /* not MSDOS */
+  
++ /* glob.c */
++ #ifdef MSDOS
++ extern  char **glob_filename (char *pathname);
++ extern  char **glob_vector (char *pat, char *dir);
++ extern  int glob_match (char *pattern, char *text, int dot_special);
++ extern  int glob_pattern_p (char *pattern);
++ #else /* not MSDOS */
+  extern int glob_pattern_p ();
+  extern char **glob_filename ();
++ #endif /* not MSDOS */
+  
++ #ifdef MSDOS
++ #include <stdlib.h>
++ #else /* not MSDOS */
+  #ifndef	USG
+  extern int sigsetmask ();
+  #endif
+*************** extern void qsort ();
+*** 127,134 ****
+--- 254,273 ----
+  extern int atoi ();
+  extern int pipe (), close (), open (), lseek (), read ();
+  extern char *ctime ();
++ #endif /* not MSDOS */
++ 
++ #ifdef MSDOS
++ extern  char **construct_command_argv (char *line, struct file *file);
++ extern  void wait_for_children (unsigned int n, int err);
++ extern  void wait_to_start_job (void);
++ extern  void init_siglist (void);
++ extern  void print_file_variables (struct file *file);
++ extern  int try_implicit_rule (struct file *file, unsigned int depth);
++ #endif /* MSDOS */
+  
++ #ifndef MSDOS			/* <stdlib.h> */
+  extern char **environ;
++ #endif /* not MSDOS */
+  
+  #ifdef	USG
+  extern char *getcwd ();
+diff -cBdNp e:/gnu/make/gnu/makefile ./makefile
+*** e:/gnu/make/gnu/makefile	Tue Jul 24 00:56:17 1990
+--- ./makefile	Tue Jul 24 00:55:54 1990
+***************
+*** 0 ****
+--- 1,150 ----
++ # Copyright (C) 1988, 1989 Free Software Foundation, Inc.
++ # This file is part of GNU Make.
++ # 
++ # GNU Make is free software; you can redistribute it and/or modify
++ # it under the terms of the GNU General Public License as published by
++ # the Free Software Foundation; either version 1, or (at your option)
++ # any later version.
++ #
++ # GNU Make is distributed in the hope that it will be useful,
++ # but WITHOUT ANY WARRANTY; without even the implied warranty of
++ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ # GNU General Public License for more details.
++ # 
++ # You should have received a copy of the GNU General Public License
++ # along with GNU Make; see the file COPYING.  If not, write to
++ # the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
++ 
++ # MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++ #
++ # To this port, the same copying conditions apply as to the
++ # original release.
++ #
++ # IMPORTANT:
++ # This file is not identical to the original GNU release!
++ # You should have received this code as patch to the official
++ # GNU release.
++ #
++ # MORE IMPORTANT:
++ # This port comes with ABSOLUTELY NO WARRANTY.
++ #
++ # $Header: e:/gnu/make/RCS/makefile.'v 3.58.0.9 90/07/23 23:17:36 tho Exp $
++ 
++ #
++ #	Makefile for GNU Make
++ #
++ 
++ BINDIR	= c:/bin
++ 
++ #BUILD = debug
++ BUILD = production
++ 
++ ifeq ($(BUILD),debug)
++ 
++ CFLAGS	= $(defines) -FPa -AL -Od -Zi -W4 -DSTDC_HEADERS
++ CRIPPLED_CFLAGS = $(CFLAGS)
++ LDFLAGS = /st:0x8000/map/co
++ 
++ else
++ 
++ CFLAGS	= $(defines) -FPa -AL -Ox -W4 -DSTDC_HEADERS
++ CRIPPLED_CFLAGS = $(defines) -FPa -AL -Od -W4 -DSTDC_HEADERS
++ LDFLAGS = /st:0x8000/map/e
++ 
++ endif
++ 
++ defines = -DUSG -DNO_LDAV -DNO_FLOAT
++ 
++ 
++ INSTALL	= cp
++ 
++ # Any extra object files your system needs.
++ extras	= msd_dir.obj
++ swapobj	= swap.obj spawn.obj
++ swapsrc	= swap.c spawn.c
++ 
++ # If you don't want archive support, comment these out.
++ ARCHIVES = ar.obj zipscan.obj
++ ARCHIVES_SRC = ar.c zipscan.c
++ 
++ objs  = $(swapobj) glob.obj commands.obj job.obj dir.obj file.obj load.obj \
++         misc.obj main.obj read.obj remake.obj remote.obj rule.obj \
++         implicit.obj default.obj variable.obj expand.obj function.obj \
++         vpath.obj $(ARCHIVES) $(extras)
++ srcs  = $(swapsrc) glob.c commands.c job.c dir.c file.c load.c misc.c \
++         main.c read.c remake.c remote.c rule.c implicit.c default.c \
++         variable.c expand.c function.c vpath.c version.c $(ARCHIVES_SRC)
++ incs  =	commands.h dep.h file.h job.h make.h rule.h variable.h msd_dir.h
++ 
++ DISK = b:
++ ZIPFILE	= gnumake.zip
++ RCSFILES = $(patsubst %, RCS/%'v, $(srcs) $(incs)) RCS/makefile.'v
++ MISC	= projects ChangeLog makepat mkpatch
++ 
++ all: gnumake.exe
++ 
++ gnumake.exe: $(objs) version.c
++ 	$(CC) $(CFLAGS) -c version.c
++ 	$(LINK) $(LDFLAGS) $(objs) version, $@;
++ 
++ # Well, here optimization is dangerous... (inline assembler etc.)
++ swap.obj: swap.c
++ 	$(CC) $(CRIPPLED_CFLAGS) -c $*.c
++ 
++ # MSC 6.0 bombs with `-Ox'
++ main.obj : main.c make.h commands.h dep.h file.h variable.h job.h
++ 	$(CC) $(CRIPPLED_CFLAGS) -c $*.c
++ 
++ # debugging
++ swap.exe: swap.c spawn.c
++ 	$(CC) $(CRIPPLED_CFLAGS) -DTEST -Zi -Fe$@ swap.c spawn.c
++ 	rm -f swap.obj spawn.obj
++ 
++ tags: $(srcs) $(srcs2) $(srcs3) $(incs)
++ 	etags  *.c *.h
++ 
++ install: $(BINDIR)/make.exe
++ 
++ $(BINDIR)/make.exe:gnumake.exe
++ 	$(INSTALL) $< $@
++ 
++ clean:
++ 	rm -f *.obj *.map tags errs
++ 	rcsclean *.c *.h makefile
++ 
++ zip: $(ZIPFILE)
++ 
++ disk: $(DISK)/$(ZIPFILE)
++ 
++ $(ZIPFILE): $(RCSFILES) $(MISC)
++ 	pkzip -frp $@
++ 
++ $(DISK)/$(ZIPFILE): $(ZIPFILE)
++ 	cp $< $@
++ 	pkunzip -t $@ | grep -vw OK
++ 
++ # Dependencies:
++ 
++ ar.obj: make.h file.h 
++ commands.obj: make.h dep.h commands.h file.h variable.h job.h
++ default.obj: make.h rule.h dep.h file.h commands.h variable.h
++ dir.obj: make.h msd_dir.h
++ expand.obj: make.h commands.h file.h variable.h
++ file.obj: make.h commands.h dep.h file.h variable.h
++ function.obj: make.h variable.h dep.h commands.h job.h
++ glob.obj: msd_dir.h
++ implicit.obj: make.h rule.h dep.h file.h
++ job.obj: make.h commands.h job.h file.h variable.h
++ load.obj: make.h commands.h job.h
++ misc.obj: make.h dep.h
++ msd_dir.obj: msd_dir.h
++ read.obj: make.h commands.h dep.h file.h variable.h
++ remake.obj: make.h commands.h job.h dep.h file.h
++ remote.obj: remote-s.c make.h commands.h
++ rule.obj: make.h commands.h dep.h file.h variable.h rule.h
++ variable.obj: make.h commands.h variable.h dep.h file.h
++ vpath.obj: make.h file.h variable.h
++ 
++ 
++ 
++ 
+diff -cBdNp e:/gnu/make/gnu/misc.c ./misc.c
+*** e:/gnu/make/gnu/misc.c	Tue Jul 24 00:53:10 1990
+--- ./misc.c	Tue Jul 24 00:54:56 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/misc.c'v 3.58.0.2 90/07/18 23:08:20 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "dep.h"
+  
+*************** void
+*** 237,244 ****
+--- 254,263 ----
+  perror_with_name (str, name)
+       char *str, *name;
+  {
++ #ifndef MSDOS
+    extern int errno, sys_nerr;
+    extern char *sys_errlist[];
++ #endif /* not MSDOS */
+  
+    if (errno < sys_nerr)
+      error ("%s%s: %s", str, name, sys_errlist[errno]);
+*************** void
+*** 252,259 ****
+--- 271,280 ----
+  pfatal_with_name (name)
+       char *name;
+  {
++ #ifndef MSDOS
+    extern int errno, sys_nerr;
+    extern char *sys_errlist[];
++ #endif /* not MSDOS */
+  
+    if (errno < sys_nerr)
+      fatal ("%s: %s", name, sys_errlist[errno]);
+*************** pfatal_with_name (name)
+*** 264,270 ****
+--- 285,295 ----
+  }
+  
+  /* Like malloc but get fatal error if memory is exhausted.  */
++ #ifdef MSDOS
++ #include <malloc.h>
++ #else
+  extern char *malloc (), *realloc ();
++ #endif /* ! MSDOS */
+  
+  char *
+  xmalloc (size)
+*************** dep_name (dep)
+*** 442,444 ****
+--- 467,487 ----
+    return dep->name == 0 ? dep->file->name : dep->name;
+  }
+  #endif
++ 
++ 
++ #ifdef MSDOS
++ 
++ #include <ctype.h>
++ 
++ /* Filenames returned by MS-DOS system calls are formatted very ugly:
++    all uppercase and backslashes.  Perform some cosmetics.  */
++ 
++ char *
++ msdos_format_filename (char *name)
++ {
++   char *p = name;
++   while (*p = (*p == '\\') ? '/' : tolower (*p))
++     p++;
++   return name;
++ }
++ #endif /* MSDOS */
+diff -cBdNp e:/gnu/make/gnu/msd_dir.c ./msd_dir.c
+*** e:/gnu/make/gnu/msd_dir.c	Tue Jul 24 00:56:18 1990
+--- ./msd_dir.c	Tue Jul 24 00:55:40 1990
+***************
+*** 0 ****
+--- 1,232 ----
++ /*  msd_dir.c - portable directory routines
++     Copyright (C) 1990 by Thorsten Ohl, td12@ddagsi3.bitnet
++ 
++     This program is free software; you can redistribute it and/or modify
++     it under the terms of the GNU General Public License as published by
++     the Free Software Foundation; either version 1, or (at your option)
++     any later version.
++ 
++     This program is distributed in the hope that it will be useful,
++     but WITHOUT ANY WARRANTY; without even the implied warranty of
++     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++     GNU General Public License for more details.
++ 
++     You should have received a copy of the GNU General Public License
++     along with this program; if not, write to the Free Software
++     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ 
++     IMPORTANT:
++ 
++     This code is not an official part of the GNU project and the
++     author is not affiliated to the Free Software Foundation.
++     He just likes their code and spirit.
++ 
++     $Header: e:/gnu/make/RCS/msd_dir.c'v 2.0 90/06/29 00:35:36 tho Stable $
++  */
++ 
++ /* Everything non trivial in this code is from: @(#)msd_dir.c 1.4
++    87/11/06.  A public domain implementation of BSD directory routines
++    for MS-DOS.  Written by Michael Rendell ({uunet,utai}michael@garfield),
++    August 1897 */
++ 
++ 
++ #include <stdio.h>
++ #include <stdlib.h>
++ #include <string.h>
++ #include <sys/types.h>
++ #include <sys/stat.h>
++ 
++ #include <dos.h>
++ 
++ #include "msd_dir.h"
++ 
++ static void free_dircontents (struct _dircontents *);
++ 
++ /* find ALL files! */
++ #define ATTRIBUTES	(_A_RDONLY | _A_HIDDEN | _A_SYSTEM | _A_SUBDIR)
++ 
++ 
++ 
++ DIR *
++ opendir (char *name)
++ {
++   struct find_t find_buf;
++   DIR *dirp;
++   struct _dircontents *dp;
++   char name_buf[_MAX_PATH + 1];
++   char *slash = "";
++ 
++   if (!name)
++     name = "";
++   else if (*name)
++     {
++       char *s;
++       int l = strlen (name);
++ 
++       s = name + l - 1;
++       if ( !(l == 2 && *s == ':') && *s != '\\' && *s != '/')
++ 	slash = "/";	/* save to insert slash between path and "*.*" */
++     }
++ 
++   strcat (strcat (strcpy (name_buf, name), slash), "*.*");
++ 
++   dirp = (DIR *) malloc (sizeof (DIR));
++   if (dirp == (DIR *)0)
++     return (DIR *)0;
++ 
++   dirp->dd_loc = 0;
++   dirp->dd_contents = dirp->dd_cp = (struct _dircontents *) 0;
++ 
++   if (_dos_findfirst (name_buf, ATTRIBUTES, &find_buf))
++     {
++       free (dirp);
++       return (DIR *)0;
++     }
++ 
++   do
++     {
++       dp = (struct _dircontents *) malloc (sizeof (struct _dircontents));
++       if (dp == (struct _dircontents *)0)
++ 	{
++ 	  free_dircontents (dirp->dd_contents);
++ 	  return (DIR *)0;
++ 	}
++ 
++       dp->_d_entry = malloc (strlen (find_buf.name) + 1);
++       if (dp->_d_entry == (char *)0)
++ 	{
++ 	  free (dp);
++ 	  free_dircontents (dirp->dd_contents);
++ 	  return (DIR *)0;
++ 	}
++ 
++       if (dirp->dd_contents)
++ 	dirp->dd_cp = dirp->dd_cp->_d_next = dp;
++       else
++ 	dirp->dd_contents = dirp->dd_cp = dp;
++ 
++       strcpy (dp->_d_entry, find_buf.name);
++ 
++       dp->_d_next = (struct _dircontents *)0;
++ 
++     } while (! _dos_findnext (&find_buf));
++ 
++   dirp->dd_cp = dirp->dd_contents;
++ 
++   return dirp;
++ }
++ 
++ 
++ void
++ closedir (DIR *dirp)
++ {
++   free_dircontents (dirp->dd_contents);
++   free ((char *) dirp);
++ }
++ 
++ 
++ struct direct *
++ readdir (DIR *dirp)
++ {
++   static struct direct dp;
++ 
++   if (dirp->dd_cp == (struct _dircontents *)0)
++     return (struct direct *)0;
++   dp.d_namlen = dp.d_reclen =
++     strlen (strcpy (dp.d_name, dirp->dd_cp->_d_entry));
++   strlwr (dp.d_name);		/* JF */
++   dp.d_ino = 0;
++   dirp->dd_cp = dirp->dd_cp->_d_next;
++   dirp->dd_loc++;
++ 
++   return &dp;
++ }
++ 
++ 
++ void
++ seekdir (DIR *dirp, long off)
++ {
++   long i = off;
++   struct _dircontents *dp;
++ 
++   if (off < 0)
++     return;
++   for (dp = dirp->dd_contents; --i >= 0 && dp; dp = dp->_d_next)
++     ;
++   dirp->dd_loc = off - (i + 1);
++   dirp->dd_cp = dp;
++ }
++ 
++ 
++ long
++ telldir (DIR *dirp)
++ {
++   return dirp->dd_loc;
++ }
++ 
++ 
++ /* Garbage collection */
++ 
++ static void
++ free_dircontents (struct _dircontents *dp)
++ {
++   struct _dircontents *odp;
++ 
++   while (dp)
++     {
++       if (dp->_d_entry)
++ 	free (dp->_d_entry);
++       dp = (odp = dp)->_d_next;
++       free (odp);
++     }
++ }
++ 
++ 
++ #ifdef TEST
++ 
++ void main (int argc, char *argv[]);
++ 
++ void
++ main (int argc, char *argv[])
++ {
++   static DIR *directory;
++   struct direct *entry = (struct direct *)0;
++ 
++   char *name = "";
++ 
++   if (argc > 1)
++     name = argv[1];
++ 
++   directory = opendir (name);
++ 
++   if (!directory)
++     {
++       fprintf (stderr, "can't open directory `%s'.\n", name);
++       exit (2);
++     }
++ 
++   while (entry = readdir (directory))
++     printf ("> %s\n", entry->d_name);
++ 
++   printf ("done.\n");
++ }
++ 
++ #endif /* TEST */
++ 
++ 
++ /* 
++  * Local Variables:
++  * mode:C
++  * ChangeLog:ChangeLog
++  * compile-command:make
++  * End:
++  */
++ 
++ 
++ /* 
++  * Local Variables:
++  * mode:C
++  * ChangeLog:ChangeLog
++  * compile-command:make
++  * End:
++  */
+diff -cBdNp e:/gnu/make/gnu/msd_dir.h ./msd_dir.h
+*** e:/gnu/make/gnu/msd_dir.h	Tue Jul 24 00:56:18 1990
+--- ./msd_dir.h	Tue Jul 24 00:55:42 1990
+***************
+*** 0 ****
+--- 1,63 ----
++ /*  msd_dir.c - portable directory routines
++     Copyright (C) 1990 by Thorsten Ohl, td12@ddagsi3.bitnet
++ 
++     This program is free software; you can redistribute it and/or modify
++     it under the terms of the GNU General Public License as published by
++     the Free Software Foundation; either version 1, or (at your option)
++     any later version.
++ 
++     This program is distributed in the hope that it will be useful,
++     but WITHOUT ANY WARRANTY; without even the implied warranty of
++     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++     GNU General Public License for more details.
++ 
++     You should have received a copy of the GNU General Public License
++     along with this program; if not, write to the Free Software
++     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ 
++     IMPORTANT:
++ 
++     This code is not an official part of the GNU project and the
++     author is not affiliated to the Free Software Foundation.
++     He just likes their code and spirit.
++ 
++     $Header: e:/gnu/make/RCS/msd_dir.h'v 2.0 90/06/29 00:35:36 tho Stable $
++  */
++ 
++ /* Everything non trivial in this code is taken from: @(#)msd_dir.c 1.4
++    87/11/06.  A public domain implementation of BSD directory routines
++    for MS-DOS.  Written by Michael Rendell ({uunet,utai}michael@garfield),
++    August 1897 */
++ 
++ 
++ #define	rewinddir(dirp)	seekdir(dirp, 0L)
++ 
++ #define	MAXNAMLEN	12
++ 
++ struct direct
++ {
++   ino_t d_ino;			/* a bit of a farce */
++   int d_reclen;			/* more farce */
++   int d_namlen;			/* length of d_name */
++   char d_name[MAXNAMLEN + 1];	/* garentee null termination */
++ };
++ 
++ struct _dircontents
++ {
++   char *_d_entry;
++   struct _dircontents *_d_next;
++ };
++ 
++ typedef struct _dirdesc
++ {
++   int dd_id;			/* uniquely identify each open directory */
++   long dd_loc;			/* where we are in directory entry is this */
++   struct _dircontents *dd_contents;	/* pointer to contents of dir */
++   struct _dircontents *dd_cp;	/* pointer to current position */
++ } DIR;
++ 
++ extern void seekdir (DIR *, long);
++ extern long telldir (DIR *);
++ extern DIR *opendir (char *);
++ extern void closedir (DIR *);
++ extern struct direct *readdir (DIR *);
+diff -cBdNp e:/gnu/make/gnu/read.c ./read.c
+*** e:/gnu/make/gnu/read.c	Tue Jul 24 00:53:14 1990
+--- ./read.c	Tue Jul 24 00:55:08 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/read.c'v 3.58.0.3 90/07/23 22:52:53 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "dep.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 21,35 ****
+  #include "file.h"
+  #include "variable.h"
+  
+  #include <pwd.h>
+  struct passwd *getpwnam ();
+! 
+! 
+  static void read_makefile ();
+  static unsigned int readline (), do_define ();
+  static int conditional_line ();
+  static void record_files ();
+  static char *find_semicolon ();
+  
+  
+  /* A `struct linebuffer' is a structure which holds a line of text.
+--- 38,70 ----
+  #include "file.h"
+  #include "variable.h"
+  
++ #ifndef MSDOS
+  #include <pwd.h>
+  struct passwd *getpwnam ();
+! #endif /* not MSDOS */
+!   
+! #ifdef MSDOS
+! #include <ctype.h>
+! static  void read_makefile (char *filename, int type);
+! static  unsigned int readline (struct linebuffer *linebuffer, FILE *stream,
+! 			       char *filename);
+! static  unsigned int do_define (char *name, unsigned int namelen,
+! 		enum variable_origin origin, unsigned int lineno,
+! 		FILE *infile, char *filename);
+! static  int conditional_line (char *line, char *filename, unsigned int lineno);
+! static  void record_files (struct nameseq *filenames, char *pattern,
+! 		char *pattern_percent, struct dep *deps,
+! 		unsigned int commands_started, char *commands,
+! 		unsigned int commands_idx, int two_colon, char *filename,
+! 		unsigned int lineno, int set_default);
+! static char *find_semicolon (char *string);
+! #else /* not MSDOS */
+  static void read_makefile ();
+  static unsigned int readline (), do_define ();
+  static int conditional_line ();
+  static void record_files ();
+  static char *find_semicolon ();
++ #endif /* not MSDOS */
+  
+  
+  /* A `struct linebuffer' is a structure which holds a line of text.
+*************** read_all_makefiles (makefiles)
+*** 149,155 ****
+--- 184,194 ----
+    if (num_makefiles == 0)
+      {
+        static char *default_makefiles[] =
++ #ifdef MSDOS
++ 	{ "makefile.gnu", "makefile", 0 };
++ #else /* not MSDOS */
+  	{ "GNUmakefile", "makefile", "Makefile", 0 };
++ #endif /* not MSDOS */
+        register char **p = default_makefiles;
+        while (*p != 0 && !file_exists_p (*p))
+  	++p;
+*************** read_makefile (filename, type)
+*** 493,499 ****
+--- 532,542 ----
+  
+  	  /* Is this a static pattern rule: `target: %targ: %dep; ...'?  */
+  	  p = index (p2, ':');
++ #ifdef MSDOS
++ 	  while (p != 0 && p[-1] == '\\' && (isspace (p[1]) || p != p2 + 2))
++ #else /* not MSDOS */
+  	  while (p != 0 && p[-1] == '\\')
++ #endif /* not MSDOS */
+  	    {
+  	      register char *q = &p[-1];
+  	      register int backslash = 0;
+*************** read_makefile (filename, type)
+*** 504,510 ****
+--- 547,557 ----
+  	      else
+  		break;
+  	    }
++ #ifdef MSDOS
++ 	  if (p != 0 && (isspace (p[1]) || p != p2 + 2))
++ #else /* not MSDOS */
+  	  if (p != 0)
++ #endif /* not MSDOS */
+  	    {
+  	      struct nameseq *target;
+  	      target = parse_file_seq (&p2, ':', sizeof (struct nameseq));
+*************** parse_file_seq (stringp, stopchar, size)
+*** 1221,1226 ****
+--- 1268,1277 ----
+  	break;
+        /* Yes, find end of next name.  */
+        q = p;
++ #ifdef MSDOS		/* interpret "c:foo" as file on different drive.  */
++       if (isalpha (p[0]) && p[1] == ':' && !isspace (p[2]))
++ 	p += 3;
++ #endif /* MSDOS */
+        while (1)
+  	{
+  	  c = *p++;
+*************** multi_glob (chain, size)
+*** 1427,1432 ****
+--- 1478,1484 ----
+      {
+        nexto = old->next;
+  
++ #ifndef MSDOS
+        if (*old->name == '~')
+  	{
+  	  if (old->name[1] == '/' || old->name[1] == '\0')
+*************** multi_glob (chain, size)
+*** 1486,1491 ****
+--- 1538,1544 ----
+  		}
+  	    }
+  	}
++ #endif /* ! MSDOS */
+  
+        if (glob_pattern_p (old->name))
+  	{
+diff -cBdNp e:/gnu/make/gnu/remake.c ./remake.c
+*** e:/gnu/make/gnu/remake.c	Tue Jul 24 00:53:16 1990
+--- ./remake.c	Tue Jul 24 00:55:14 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/remake.c'v 3.58.0.1 90/07/17 00:59:46 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "job.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 27,35 ****
+  #include <fcntl.h>
+  #endif
+  
+! 
+  extern int open (), fstat (), read (), lseek (), write (), close ();
+  extern time_t time ();
+  
+  extern int try_implicit_rule ();
+  extern time_t ar_member_date ();
+--- 44,56 ----
+  #include <fcntl.h>
+  #endif
+  
+! #ifdef MSDOS
+! #include <io.h>
+! #include <time.h>
+! #else /* not MSDOS */
+  extern int open (), fstat (), read (), lseek (), write (), close ();
+  extern time_t time ();
++ #endif /* not MSDOS */
+  
+  extern int try_implicit_rule ();
+  extern time_t ar_member_date ();
+*************** extern time_t ar_member_date ();
+*** 38,47 ****
+--- 59,78 ----
+  /* Incremented when a file has been remade.  */
+  unsigned int files_remade = 0;
+  
++ #ifdef MSDOS
++ static  int update_file (struct file *file, unsigned int depth);
++ static  int update_file_1 (struct file *file, unsigned int depth);
++ static  int check_dep (struct file *file, unsigned int depth, long this_mtime, int *must_make_ptr);
++ static  void remake_file (struct file *file);
++ static  long name_mtime (char *name);
++ static  long library_file_mtime (char *lib);
++ static  int touch_file (struct file *file);
++ #else /* not MSDOS */
+  static int update_file (), update_file_1 (), check_dep ();
+  static void remake_file ();
+  static time_t name_mtime (), library_file_mtime ();
+  extern time_t f_mtime ();
++ #endif /* not MSDOS */
+  
+  /* Remake all the goals in the `struct dep' chain GOALS.  Return -1 if nothing
+     was done, 0 if all goals were updated successfully, or 1 if a goal failed.
+diff -cBdNp e:/gnu/make/gnu/rule.c ./rule.c
+*** e:/gnu/make/gnu/rule.c	Tue Jul 24 00:53:22 1990
+--- ./rule.c	Tue Jul 24 00:55:20 1990
+*************** You should have received a copy of the G
+*** 16,21 ****
+--- 16,38 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/rule.c'v 3.58.0.1 90/07/17 00:59:49 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "dep.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 23,30 ****
+--- 40,52 ----
+  #include "variable.h"
+  #include "rule.h"
+  
++ #ifdef MSDOS
++ static void freerule (struct rule *rule, struct rule *lastrule);
++ static int new_pattern_rule (struct rule *rule, int override);
++ #else /* not MSDOS */
+  static void freerule ();
+  static int new_pattern_rule ();
++ #endif /* not MSDOS */
+  
+  /* Chain of all pattern rules.  */
+  
+diff -cBdNp e:/gnu/make/gnu/rule.h ./rule.h
+*** e:/gnu/make/gnu/rule.h	Tue Jul 24 00:53:24 1990
+--- ./rule.h	Tue Jul 24 00:55:22 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/rule.h'v 3.58.0.1 90/07/17 01:00:07 tho Exp $
++  */
++ 
+  /* Structure used for pattern rules.  */
+  
+  struct rule
+*************** extern unsigned int max_pattern_dep_leng
+*** 47,51 ****
+  extern struct file *suffix_file;
+  extern unsigned int maxsuffix;
+  
+! 
+  extern void install_pattern_rule ();
+--- 64,71 ----
+  extern struct file *suffix_file;
+  extern unsigned int maxsuffix;
+  
+! #ifdef  MSDOS
+! extern  void install_pattern_rule (struct pspec *p, int terminal);
+! #else /* not MSDOS */
+  extern void install_pattern_rule ();
++ #endif /* not MSDOS */
+diff -cBdNp e:/gnu/make/gnu/spawn.c ./spawn.c
+*** e:/gnu/make/gnu/spawn.c	Tue Jul 24 00:56:23 1990
+--- ./spawn.c	Tue Jul 24 00:55:48 1990
+***************
+*** 0 ****
+--- 1,726 ----
++ /*  spawn.c - replacements for MSC spawn*() functions
++     Copyright (C) 1990 by Thorsten Ohl, td12@ddagsi3.bitnet
++ 
++     This program is free software; you can redistribute it and/or modify
++     it under the terms of the GNU General Public License as published by
++     the Free Software Foundation; either version 1, or (at your option)
++     any later version.
++ 
++     This program is distributed in the hope that it will be useful,
++     but WITHOUT ANY WARRANTY; without even the implied warranty of
++     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++     GNU General Public License for more details.
++ 
++     You should have received a copy of the GNU General Public License
++     along with this program; if not, write to the Free Software
++     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ 
++     IMPORTANT:
++ 
++     This code is not an official part of the GNU project and the
++     author is not affiliated to the Free Software Foundation.
++     He just likes their code and spirit.  */
++ 
++ static char RCS_id[] =
++ "$Header: e:/gnu/make/RCS/spawn.c'v 0.18 90/07/22 14:42:38 tho Exp $";
++ 
++ 
++ #include <stdio.h>
++ #include <stdlib.h>
++ #include <string.h>
++ #include <ctype.h>
++ #include <process.h>
++ #include <malloc.h>
++ #include <errno.h>
++ #include <direct.h>
++ #include <dos.h>
++ #include <io.h>
++ #include <sys/types.h>
++ 
++ 
++ #define MAX_MSDOS_CMDLINE	126
++ #define MAX_MSDOS_PATH		144
++ 
++ /* IMPORTED DECLARATIONS */
++ 
++ enum swapping_mode
++ {
++   none, disk, ems, xms
++ };
++ 
++ extern int
++ spawn_child (enum swapping_mode mode, char *path, char *cmdline, char *env,
++ 	     int len, char *swap_file);
++ 
++ 
++ /* PRIVATE DECLARATIONS */
++ 
++ static void swapping_mode_hook (enum swapping_mode * swapping_ptr, char *dev);
++ static int commandline_hook (char *cmd, char **argv, char **env0,
++ 			     char **respond_file_name_ptr);
++ static char *putenv_cmdline (char *cmd, char **argv);
++ static int build_environment (char _far ** envbuf, char *cmdline,
++ 			      char **envvec);
++ static char *build_link_respond_file (char **argv);
++ static char *build_lib_respond_file (char **argv);
++ static char *build_zip_respond_file (char **argv);
++ static int build_cmdline (char **argv);
++ static char *expand_path (char *name, char *env, char *(*select) (char *));
++ static char *executable_p (char *path);
++ extern void *xmalloc (size_t size);
++ extern void *xrealloc (void *ptr, size_t size);
++ 
++ static char *extensions[] =/* extensions recognized during */
++ {				/* path search */
++   ".bat",			/* this will be passed to the shell */
++   ".exe",
++   ".com",
++   NULL,
++ };
++ 
++ #define PATH_SEP	';'
++ #define FSLASH		'/'
++ #define BSLASH		'\\'
++ 
++ 
++ /* PUBLIC DECLARATIONS */
++ 
++ extern char *mktmpname (char *prefix);
++ 
++ 
++ /* The main entry points, work just like spawnvpe?() from the standard MSC
++    library.  */
++ 
++ int swap_and_spawnvp (char *device, char *cmd, char **argv);
++ int swap_and_spawnvpe (char *device, char *cmd, char **argv, char **envvec);
++ 
++ int
++ swap_and_spawnvp (char *device, char *cmd, char **argv)
++ {
++   return swap_and_spawnvpe (device, cmd, argv, NULL);
++ }
++ 
++ int
++ swap_and_spawnvpe (char *device, char *cmd, char **argv, char **envvec)
++ {
++   int len;
++   int rc;
++   char _far *env = (char _far *) 0;
++   char *env0 = NULL;
++   char *respond_file_name = NULL;
++   char *swap_file_name = mktmpname ("vm");
++   enum swapping_mode swapping = xms;
++ 
++   if (device != NULL)
++     swapping_mode_hook (&swapping, device);
++ 
++   argv[0] = expand_path (cmd, "PATH", executable_p);
++   if (argv[0] == NULL)
++     return ENOENT;
++ 
++   rc = commandline_hook (cmd, argv, &env0, &respond_file_name);
++   if (rc)
++     return rc;
++ 
++   len = build_environment (&env, env0, (envvec == NULL) ? environ : envvec);
++   if (!len)
++     return E2BIG;
++ 
++   rc = spawn_child (swapping, argv[0], argv[1], env, len, swap_file_name);
++ 
++   if (env0)
++     free (env0);
++   if (env)
++     free (env);
++   if (*argv[1])
++     free (argv[1]);
++   free (swap_file_name);
++ 
++   if (respond_file_name)	/* clean up disk */
++     unlink (respond_file_name);
++ 
++   return rc;
++ }
++ 
++ 
++ /* Look if DEV corresponds to a known swapping device and set *SWAPPING_PTR
++    accordingly;  */
++ 
++ void
++ swapping_mode_hook (enum swapping_mode * swapping_ptr, char *dev)
++ {
++   if (dev)
++     {
++       strlwr (dev);
++       if (!strcmp ("xms", dev))
++ 	*swapping_ptr = xms;
++       else if (!strcmp ("ems", dev))
++ 	{
++ 	  fprintf (stderr, "Swapping to expanded memory is not supported yet, "
++ 		   "will try extended memory.\n");
++ 	  *swapping_ptr = xms;
++ 	}
++       else if (!strcmp ("disk", dev))
++ 	*swapping_ptr = disk;
++       else if (!strcmp ("none", dev))
++ 	{
++ 	  fprintf (stderr, "No swapping is not supported yet, "
++ 			    "will swap to disk.\n");
++ 	  *swapping_ptr = disk;
++ 	}
++       else
++ 	{
++ 	  fprintf (stderr, "Can't swap to `%s' (no such device), "
++ 		   "will try extended memory.\n", dev);
++ 	  *swapping_ptr = xms;
++ 	}
++     }
++ }
++ 
++ /* Look if CMD allows or requires special treatment, manipulate ARGV
++    accordingly. If necessary, create ENV0 and RESPOND_FILE_NAME_PTR.
++    In any case, merge ARGV[1], ... into ARGV[1].
++    ~~~~~~~~~~~
++    Note that the special treatment can be switched off by giving CMD
++    uppercase!  */
++ 
++ int
++ commandline_hook (char *cmd, char **argv, char **env0,
++ 		  char **respond_file_name_ptr)
++ {
++   if (!strcmp ("cl", cmd) || !strcmp ("fl", cmd) || !strcmp ("masm", cmd))
++     *env0 = putenv_cmdline (cmd, argv);
++   else if (!strcmp ("link", cmd))
++     {
++       *respond_file_name_ptr = build_link_respond_file (argv);
++       if (*respond_file_name_ptr == NULL)
++ 	return E2BIG;
++     }
++   else if (!strcmp ("lib", cmd))
++     {
++       *respond_file_name_ptr = build_lib_respond_file (argv);
++       if (*respond_file_name_ptr == NULL)
++ 	return E2BIG;
++     }
++   else if (!strcmp ("pkzip", cmd) || !strcmp ("pkunzip", cmd))
++     {
++       *respond_file_name_ptr = build_zip_respond_file (argv);
++       if (*respond_file_name_ptr == NULL)
++ 	return E2BIG;
++     }
++   else if (!build_cmdline (argv))
++     return E2BIG;
++ 
++   return 0;			/* success */
++ }
++ 
++ 
++ /* Manipulating the environment.  */
++ 
++ /* Merge CMDLINE, ENVVEC[0], ... into ENVBUF as a well formed MS-DOS
++    environment (will be malloc()'d).  Returns the length (incl. the
++    trailing '\0's)  of the resulting environment.  */
++ 
++ int
++ build_environment (char _far ** envbuf, char *cmdline, char **envvec)
++ {
++   char *p;
++   char **envptr = envvec;
++   int len = 1;
++ 
++   if (envvec == NULL && cmdline == NULL)
++     return 0;
++ 
++   if (cmdline != NULL)
++     len += strlen (cmdline) + 1;
++   if (envvec != NULL)
++     while (*envptr)
++       len += strlen (*envptr++) + 1;
++ 
++   p = *envbuf = (char *) xmalloc (len);
++ 
++   if (cmdline != NULL)
++     {
++       strcpy (p, cmdline);
++       p += strlen (cmdline) + 1;
++     }
++   envptr = envvec;
++   if (envvec != NULL)
++     while (*envptr)
++       {
++ 	strcpy (p, *envptr);
++ 	p += strlen (*envptr++) + 1;
++       }
++   *p++ = '\0';			/* end of environment! */
++ 
++   return (len);
++ }
++ 
++ 
++ /* Manipulating the commandline.  */
++ 
++ /* The following functions for manipulating the commandline do NOT free
++    the storage of the ARGV[] strings, since they can't know how it was
++    allocated (separately or as single block).  */
++ 
++ /* Build an environment entry for passing options to the Microsoft C
++    and Fortran Compilers and Macro Assembler.  CMD is the command to
++    execute.  ARGV[1],... will be moved to an environment entry "CMD" and
++    we will have ARGV[1] == "".  */
++ 
++ char *
++ putenv_cmdline (char *cmd, char **argv)
++ {
++   int nologo_flag = 0;
++   char **av = argv + 1;
++   char *p;
++   char *env;
++   int len = 3 + strlen (cmd);
++ 
++   /* `fl' and `cl' understand the "-nologo" option to suppress the banner,
++       `masm' not.  */
++   if (!strcmp (cmd, "fl") || !strcmp (cmd, "cl"))
++     {
++       nologo_flag = 1;
++       len += 8;
++     }
++ 
++   while (*av)
++     len += strlen (*av++) + 1;
++ 
++   p = env = (char *) xmalloc (len);
++ 
++   strcpy (p, strupr (cmd));
++   p += strlen (cmd);
++   *p++ = '=';
++ 
++   if (nologo_flag)
++     {
++       strcpy (p, "-nologo");
++       p += 7;
++     }
++ 
++   av = argv + 1;
++   while (*av)			/* paste arguments together */
++     {
++       *p++ = ' ';
++       strcpy (p, *av);
++       p += strlen (*av++);
++     }
++ 
++   *argv[1] = '\0';		/* commandline terminated */
++ 
++   return env;
++ }
++ 
++ 
++ /* Build a respondfile for the Microsoft linker from ARGV[0].  Returns the
++    name of the generated file on success, NULL otherwise.  The new
++    commandline ARGV[1] holds the proper command for instructing the linker
++    to use this respondfile.  */
++ 
++ char *
++ build_link_respond_file (char **argv)
++ {
++   int len = 0;
++   char **av = argv;
++   FILE *respond_file;
++   char *respond_file_name = mktmpname ("lk");
++ 
++   if (!(respond_file = fopen (respond_file_name, "w")))
++     {
++       fprintf (stderr, "can't open link respond_file %s.\n",
++ 	       respond_file_name);
++       return NULL;
++     }
++ 
++   while (*++av)
++     {
++       char *cp;
++ 
++       if (strlen (*av) + len > 50)
++ 	{
++ 	  fprintf (respond_file, "+\n");
++ 	  len = 0;
++ 	}
++ 
++       while (cp = strchr (*av, ','))	/* new respond group? */
++ 	{
++ 	  *cp = '\n';
++ 	  len = *av - cp - 1;	/* precompensate */
++ 	}
++ 
++       len += fprintf (respond_file, "%s ", *av);
++     }
++ 
++   fprintf (respond_file, ";\n");/* avoid prompts! */
++ 
++   fclose (respond_file);
++ 
++   argv[1] = (char *) xmalloc (strlen (respond_file_name) + 9);
++   sprintf (argv[1], "/batch @%s", respond_file_name);
++ 
++   return respond_file_name;
++ }
++ 
++ 
++ /* Build a respondfile for the Microsoft library manager from ARGV[0].
++    Returns the name of the generated file on success, NULL otherwise.  The
++    new commandline ARGV[1] holds the proper command for instructing the
++    library manager to use this respondfile.   A module without command
++    inherits the one of it's predecessor.  This allows constructions like
++    `lib foo.lib -+ $?' in the makefiles (idea stolen from Kneller's
++    `ndmake').  */
++ 
++ char *
++ build_lib_respond_file (char **argv)
++ {
++   int len = 0;
++   char **av = argv;
++   FILE *respond_file;
++   char *respond_file_name = mktmpname ("lb");
++   static char lib_action[3] = "+";
++ 
++   if (!(respond_file = fopen (respond_file_name, "w")))
++     {
++       fprintf (stderr, "can't open lib respond_file %s.\n",
++ 	       respond_file_name);
++       return NULL;
++     }
++ 
++   fprintf (respond_file, " %s\n ", *++av);	/* easy: the lib file  */
++ 
++   if (access (*av, 0))		/* new library */
++     fprintf (respond_file, "y\n ");	/* create it! */
++ 
++   while (*++av)
++     {
++       char *cp;
++ 
++       if (strchr ("+-*", **av))
++ 	{
++ 	  lib_action[0] = *(*av)++;
++ 
++ 	  if (strchr ("+-*", **av))
++ 	    lib_action[1] = *(*av)++;
++ 	  else
++ 	    lib_action[1] = '\0';
++ 	}
++ 
++       if (**av)
++ 	{
++ 	  if (strlen (*av) + len > 50)
++ 	    {
++ 	      fprintf (respond_file, "&\n ");
++ 	      len = 0;
++ 	    }
++ 
++ 	  len += fprintf (respond_file, "%s", lib_action) + 1;
++ 
++ 	  while (cp = strchr (*av, ','))	/* new respond group? */
++ 	    {
++ 	      *cp = '\n';
++ 	      len = *av - cp - 1;	/* precompensate */
++ 	      lib_action[0] = '\0';	/* no more actions! */
++ 	    }
++ 
++ 	  len += fprintf (respond_file, "%s ", *av) + 1;
++ 	}
++     }
++ 
++   fprintf (respond_file, ";\n");/* avoid prompts! */
++ 
++   fclose (respond_file);
++ 
++   argv[1] = (char *) xmalloc (strlen (respond_file_name) + 10);
++   sprintf (argv[1], "/nologo @%s", respond_file_name);
++ 
++   return respond_file_name;
++ }
++ 
++ 
++ /* Build a respondfile for the pk(un)?zip archive managers from ARGV[0].
++    Returns the name of the generated file on success, NULL otherwise.  The
++    new commandline ARGV[1] holds the proper command for instructing
++    pk(un)?zip to use this respondfile.  */
++ 
++ char *
++ build_zip_respond_file (char **argv)
++ {
++   char *cmdline = (char *) xmalloc (127 * sizeof (char));
++   char *ptr = cmdline;
++   char **av = argv + 1;
++   int len = 0;
++   FILE *respond_file = NULL;
++   char *respond_file_name = mktmpname ("zi");
++ 
++   respond_file = fopen (respond_file_name, "w");
++   if (respond_file == NULL)
++     {
++       fprintf (stderr, "can't open zip respondfile %s.\n", respond_file_name);
++       return NULL;
++     }
++ 
++   while (**av == '-')		/* leave options on the commandline */
++     {
++       if (ptr - cmdline + strlen (*av) > 126)
++ 	{
++ 	  free (cmdline);
++ 	  return NULL;
++ 	}
++       strcpy (ptr, *av);
++       ptr += strlen (*av);
++       *ptr++ = ' ';
++       av++;
++     }
++ 
++   if (*av == NULL		/* missing zipfilename? */
++       || ptr - cmdline + strlen (*av) + strlen (respond_file_name) > 124)
++     {
++       free (cmdline);
++       return NULL;
++     }
++ 
++   sprintf (ptr, "%s @%s", *av++, respond_file_name);
++ 
++   while (*av)
++     fprintf (respond_file, "%s\n", *av++);
++ 
++   fprintf (respond_file, "\n");
++   fclose (respond_file);
++ 
++   argv[1] = cmdline;
++ 
++   return respond_file_name;
++ }
++ 
++ 
++ /* Build a MS-DOS commandline from the supplied argument vector ARGV and
++    put it into ARGV[1].  Storage of the old argv[1], ... is NOT free()'d,
++    since we can't know how it was allocated (separately or as single
++    block)! ARGV[0] is assumed to be a fully expanded pathname incl
++    extension.  If ARGV[0] ends int ".bat", we will pass the command to the
++    shell.  Returns 1 on success, 0 if the commandline is too long.  */
++ 
++ int
++ build_cmdline (char **argv)
++ {
++   char *cmdline = (char *) xmalloc (128 * sizeof (char));
++   char *p = cmdline;
++   char *tmp;
++   char **av;
++ 
++   if ((tmp = strrchr (argv[0], '.'))	/* .bat files will be passed */
++       && !strcmp (tmp + 1, "bat"))	/* to the shell ...  */
++     {
++       *tmp = '\0';		/* terminate */
++ 
++       strcpy (p, "/c ");	/* return after execution */
++       p += 3;
++ 
++       if ((tmp = strrchr (argv[0], BSLASH))	/* strip path */
++ 	  || (tmp = strrchr (argv[0], FSLASH)))
++ 	strcpy (p, tmp + 1);
++       else
++ 	strcpy (p, argv[0]);
++ 
++       p += strlen (p);
++       *p++ = ' ';
++ 
++       if (!(argv[0] = getenv ("COMSPEC")))
++ 	{
++ 	  fprintf (stderr, "command processor not found!");
++ 	  exit (1);
++ 	}
++     }
++ 
++   av = argv;			/* paste arguments together */
++   while (*++av)
++     {
++       strcpy (p, *av);
++       p += strlen (*av);
++       *p++ = ' ';
++       if ((p - cmdline) > 126)
++ 	return (0);		/* commandline to long for MeSy-DOS */
++     }
++ 
++   *p = '\0';
++   argv[1] = cmdline;
++ 
++   return (1);			/* success */
++ }
++ 
++ 
++ 
++ /* $PATH search.  */
++ 
++ /* Look for NAME in the directories from $ENV ($PATH, if ENV is NULL),
++    satisfying SELECT.  */
++ 
++ char *
++ expand_path (char *name, char *env, char *(*select) (char *))
++ {
++   size_t name_len = strlen (name) + 6;	/*  SELECT may append 4 chars! */
++   char *exp = (char *) xmalloc (name_len);
++ 
++   strcpy (exp, name);
++ 
++   if ((*select) (exp))		/* first look in current directory. */
++     return exp;
++ 
++   /* If not an absolute path, scan $PATH  */
++ 
++   if (exp[1] != ':' && *exp != BSLASH && *exp != FSLASH)
++     {
++       char *ptr = getenv ((env == NULL) ? "PATH" : env);
++       if (ptr != NULL)
++ 	{
++ 	  char *path = (char *) alloca (strlen (ptr) + 1);
++ 	  strcpy (path, ptr);	/* get a copy strtok() can butcher. */
++ 
++ 	  ptr = strtok (path, ";");
++ 
++ 	  while (ptr != NULL)
++ 	    {
++ 	      exp = (char *) xrealloc (exp, strlen (ptr) + name_len);
++ 	      if ((*select) (strcat (strcat (strcpy (exp, ptr), "/"), name)))
++ 		return exp;
++ 	      ptr = strtok (NULL, ";");
++ 	    }
++ 	}
++     }
++ 
++   free (exp);
++   return NULL;			/* We've failed!  */
++ }
++ 
++ 
++ /* Return the expanded path with extension iff PATH is an executable MS-DOS
++    program, NULL otherwise.  */
++ 
++ static char *
++ executable_p (char *path)
++ {
++   char *base;
++   const char **ext = extensions;
++ 
++   base = strrchr (strrchr (path, BSLASH), FSLASH);
++   if (base == NULL)
++     base = path;
++ 
++   if (strchr (base, '.'))	/* explicit extension? */
++     {
++       if (!access (path, 0))
++ 	return path;
++     }
++   else
++     {
++       while (*base)		/* point to the end */
++ 	*base++;
++ 
++       while (*ext)		/* try all extensions */
++ 	{
++ 	  strcpy (base, *ext++);
++ 	  if (!access (path, 0))
++ 	    return path;
++ 	}
++     }
++ 
++   return NULL;			/* failed */
++ }
++ 
++ 
++ /* Get a unique filename in the temporary directory from the environment
++    entry TMP or TEMP, if this fails, use current directory.  (replacement
++    for tempnam(), whish is *too* touchy about trailing path separators!) */
++ 
++ char *
++ mktmpname (char *prefix)
++ {
++   register int len;
++   register char *ptr;
++   register char *tmpname;
++   static char default_prefix[3] = "vm";
++ 
++   if (!prefix[0] || !prefix[1])	/* did the user supply a prefix? */
++     prefix = default_prefix;
++ 
++   if (!(ptr = getenv ("TMP")) && !(ptr = getenv ("TEMP")))
++     {
++ 
++       ptr = ".";
++       len = 1;
++     }
++   else
++     {
++       len = strlen (ptr) - 1;
++       if ((ptr[len] == FSLASH) || (ptr[len] == BSLASH))
++ 	ptr[len] = '\0';
++     }
++ 
++   tmpname = xmalloc (len + 10);
++ 
++   sprintf (tmpname, "%s\\%2sXXXXXX", ptr, prefix);
++   mktemp (tmpname);
++ 
++   return tmpname;
++ }
++ 
++ 
++ #ifdef TEST
++ 
++ extern void main (int ac, char **av);
++ 
++ void *
++ xmalloc (size_t size)
++ {
++   void *result = malloc (size);
++   if (result == NULL)
++     {
++       fprintf (stderr, "virtual memory exhausted");
++       abort ();
++     }
++   return result;
++ }
++ 
++ void *
++ xrealloc (void *ptr, size_t size)
++ {
++   void *result = realloc (ptr, size);
++   if (result == NULL)
++     {
++       fprintf (stderr, "virtual memory exhausted");
++       abort ();
++     }
++   return result;
++ }
++ 
++ void
++ main (int ac, char **av)
++ {
++   int n = 0;
++   int j = 2;
++   char **argv;
++ 
++   argv = (char **) xmalloc ((ac - 1) * sizeof (char **));
++ 
++   while (j < ac)
++     {
++       argv[n] = (char *) xmalloc (strlen (av[j]) + 1);
++       strcpy (argv[n++], av[j++]);
++     }
++   argv[n] = NULL;
++ 
++   swap_and_spawnvp (av[1], *argv, argv);
++ }
++ 
++ #endif /* TEST */
++ 
++ 
++ /*
++  * Local Variables:
++  * mode:C
++  * ChangeLog:ChangeLog
++  * compile-command:cl -DTEST -W3 vmspawn.c swapcore
++  * End:
++  */
+diff -cBdNp e:/gnu/make/gnu/swap.c ./swap.c
+*** e:/gnu/make/gnu/swap.c	Tue Jul 24 00:56:24 1990
+--- ./swap.c	Tue Jul 24 00:55:46 1990
+***************
+*** 0 ****
+--- 1,1065 ----
++ /*  swap.c - swap parent to disk, EMS, or XMS while executing child (MS-DOS)
++     Copyright (C) 1990 by Thorsten Ohl, td12@ddagsi3.bitnet
++ 
++     This program is free software; you can redistribute it and/or modify
++     it under the terms of the GNU General Public License as published by
++     the Free Software Foundation; either version 1, or (at your option)
++     any later version.
++ 
++     This program is distributed in the hope that it will be useful,
++     but WITHOUT ANY WARRANTY; without even the implied warranty of
++     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++     GNU General Public License for more details.
++ 
++     You should have received a copy of the GNU General Public License
++     along with this program; if not, write to the Free Software
++     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ 
++     IMPORTANT:
++ 
++     This code is not an official part of the GNU project and the
++     author is not affiliated to the Free Software Foundation.
++     He just likes their code and spirit.  */
++ 
++ static char RCS_id[] =
++ "$Header: e:/gnu/make/RCS/swap.c'v 0.11 90/07/23 18:34:29 tho Exp $";
++ 
++ 
++ #include <stdio.h>
++ #include <stdlib.h>
++ #include <string.h>
++ #include <ctype.h>
++ #include <signal.h>
++ #include <sys/types.h>
++ 
++ #include <dos.h>
++ 
++ /* Add OFF to PTR, taking care of segment overflow  */
++ #define FP_ADD(ptr,off) \
++   (FP_SEG (ptr) += (off) >> 4, FP_OFF (ptr) += (off) & 0xff, ptr)
++ 
++ /* Paragraph-align PTR.  */
++ #define FP_PARA_ALIGN(ptr)			\
++   {						\
++     FP_SEG (ptr)				\
++       += ((FP_OFF (ptr) + 15) >> 4) + 1;	\
++     FP_OFF (ptr) = 0x0000;			\
++   }
++ 
++ 
++ /* generate inline code (usable in swapper!) */
++ #pragma intrinsic (memcpy)
++ 
++ /* don't call MS' stack checker (it will fail with the local stack!)  */
++ #pragma check_stack (off)
++ 
++ 
++ #define FILE_IO_BLKSIZE		0x8000
++ #define MAX_MSDOS_CMDLINE	126
++ #define MAX_MSDOS_PATH		144
++ #define MAX_MSDOS_MCBS		25
++ 
++ 
++ /* Atributte to force storage in the code segment! */
++ #define CODE _based (_segname ("_CODE"))
++ 
++ static off_t		CODE _swap_swapped_bytes;
++ static unsigned int	CODE _swap_handle;
++ static unsigned int	CODE _swap_psp;
++ static unsigned int	CODE _swap_resident_paras;
++ static unsigned int	CODE _swap_first_block_paras;
++ 
++ 
++ /* Parameters for DOS for creating a child process */
++ #pragma pack (1)
++ static struct
++ {
++   _segment	environment_segment;
++   char _far	*cmd_line_ptr;
++   char _far	*fcb_ptr_1;
++   char _far	*fcb_ptr_2;
++ 
++ }			CODE _swap_parameter_block;
++ #pragma pack ()
++ 
++ static char		CODE _swap_path[MAX_MSDOS_PATH];
++ static char		CODE _swap_cmdline[MAX_MSDOS_CMDLINE + 2];
++ static char		CODE _swap_fcb_1[16];	/* FCBs for DOS.  */
++ static char		CODE _swap_fcb_2[16];
++ static unsigned int	CODE _swap_environ_seg;
++ static unsigned int	CODE _swap_environment_size;
++ static int		CODE _swap_return_code;
++ 
++ static struct
++ {
++   _segment	loc;
++   unsigned int	len;
++ }			CODE _swap_orig_mcbs[MAX_MSDOS_MCBS];
++ 
++ /* This is a kludge to store _far pointers in the code segment.  */
++ 
++ static struct
++ {
++   char _far *env;
++   char _far *env_ptr;
++   char _far *xms_fct;
++   int (*swap_in_fct) (int handle, void _far * buffer, long bytes);
++   int (*swap_out_fct) (int handle, void _far * buffer, long bytes);
++ 
++ }			 CODE __swap_far_ptrs;
++ 
++ #define _swap_environment	(__swap_far_ptrs.env)
++ #define _swap_environment_ptr	(__swap_far_ptrs.env_ptr)
++ #define _swap_xms_control	(__swap_far_ptrs.xms_fct)
++ #define _swap_in_function	(__swap_far_ptrs.swap_in_fct)
++ #define _swap_out_function	(__swap_far_ptrs.swap_out_fct)
++ 
++ #pragma pack (1)
++ static struct
++ {
++   long	length;
++   int	src_handle;
++   long	src_offset;
++   int	dest_handle;
++   long	dest_offset;
++ }			CODE  _swap_xms_move_table;
++ #pragma pack ()
++ 
++ 
++ /* The local stack */
++ #define STACK_SIZE	0x200
++ static char		CODE _swap_local_stack[STACK_SIZE];
++ static unsigned int	CODE _swap_stack_pointer;
++ static _segment		CODE _swap_stack_segment;
++ 
++ /* This uses the first transient function to determine the end of the
++    resident code.  */
++ #define FIRST_TO_SWAP	(&install_parameters)
++ 
++ /* MS-DOS interface */
++ 
++ #pragma pack (1)		/* won't fit, if we don't pack! */
++ struct mcb_info
++ {
++   char		 id_byte;	/* 'M': not, 'Z': last MCB	*/
++   unsigned short owner;		/* PSP of owner			*/
++   unsigned short length;	/* length (in paragraphs = 16b)	*/
++ };
++ #pragma pack ()
++ 
++ static void _swap_fatal_error (char code, char CODE *msg, size_t len);
++ static int  _swap_free_block (_segment block);
++ static int  _swap_set_block (_segment block, unsigned int paras);
++ static unsigned int  _swap_allocate_block (unsigned int paras);
++ static void _swap_free_upper_blocks (void);
++ static void _swap_reclaim_upper_blocks (void);
++ static int  _swap_load_and_execute_program (void);
++ 
++ /* Disk I/O */
++ 
++ static unsigned int _swap_read (int handle, void _far * buffer, size_t bytes);
++ static unsigned int _swap_write (int handle, void _far * buffer, size_t bytes);
++ static int  _swap_rewind (int handle);
++ static int  _swap_write_to_handle (int handle, void _far * buffer, long size);
++ static int  _swap_read_from_handle (int handle, void _far * buffer, long size);
++ 
++ 
++ /* XMS */
++ 
++ static int _swap_xms_move_out (int handle, void _far * buffer, long bytes);
++ static int _swap_xms_move_in (int handle, void _far * buffer, long bytes);
++ static int _swap_xms_move (void);
++ static int xms_installed (void);
++ static void xms_get_control_function (void);
++ static unsigned int xms_allocate_memory (unsigned int kilobytes);
++ static unsigned int xms_free_memory (unsigned int handle);
++ 
++ 
++ /* EMS */
++ 
++ static int _swap_ems_save_page_map (int handle);
++ static int _swap_ems_restore_page_map (int handle);
++ static int _swap_ems_map_logical_page (int handle, int logical_page);
++ static int _swap_move_to_ems (int handle, void _far *buffer, long bytes);
++ static int _swap_move_from_ems (int handle, void _far *buffer, long bytes);
++ static int _swap_ems_present (void);
++ static int _swap_ems_alloc_pages (int n);
++ static int _swap_ems_free_pages (int handle);
++ static void _far *_swap_ems_get_page_frame (void);
++ 
++ /* Signal handling */
++ 
++ static void (_interrupt _far *_swap_caller_int23) (void);
++ static void _interrupt _far _swap_int23_handler (void);
++ 
++ static int	CODE _swap_user_interrupt = 0;	/* record interrupts  */
++ static char	CODE _swap_int23_handler_message[] =
++   "\r\n\a\a\a*** User interrupt: waiting for child...\r\n\r\n";
++ 
++ /* "Higher" level code.  */
++ 
++ static void _swap_setup_environment (void);
++ static int  _swap_spawn_child (void);
++ 
++ static void install_parameters (char *path, char *cmdline, char *env,
++ 				size_t size);
++ static struct mcb_info far *last_mcb (void);
++ static int  alloc_swap_file (char *name, long size);
++ static unsigned int cleanup_swap_file (unsigned handle, char *name);
++ 
++ 
++ /* The ONE and ONLY entry point */
++ 
++ enum swapping_mode { none, disk, ems, xms };
++ 
++ int spawn_child (enum swapping_mode mode, char *path, char *cmdline,
++ 		 char *env, int len, char *swap_file);
++ 
++ /* Very Fatal Error messages.  */
++ 
++ static char CODE _swap_err_msg_head[] = \
++   "\r\nFatal error in memory management. Aborting.\r\nReason: ";
++ static char CODE _swap_err_msg_0[] = "Can't reallocate core.";
++ static char CODE _swap_err_msg_1[] = "Can't swap code back.";
++ static char CODE _swap_err_msg_2[] = "Can't release core.";
++ static char CODE _swap_err_msg_3[] = "Too many MCBs.";
++ 
++ #define SWAP_FATAL_ERROR(num) \
++   _swap_fatal_error (-1, _swap_err_msg_##num, sizeof (_swap_err_msg_##num))
++ 
++ 
++ void
++ _swap_setup_environment (void)
++ {
++   _swap_resident_paras = FP_SEG (_swap_environment) - _swap_psp;
++ 
++   if (_swap_environment_size && *_swap_environment_ptr)
++     {
++       memcpy (_swap_environment, _swap_environment_ptr,
++ 	      _swap_environment_size);
++       _swap_resident_paras += (_swap_environment_size + 15) >> 4;
++       _swap_environ_seg = FP_SEG (_swap_environment);
++     }
++   else
++     _swap_environ_seg = 0;	/* pass our own environment */
++ }
++ 
++ 
++ /* Memory management.
++ 
++    WARNING:  this used undocumented MS-DOS features.
++ 
++    This features seem to be very stable anyway (Microsoft obviously uses
++    them in their own programs and since they won't want to break them,
++    these feaatures shouldn't go away.  */
++ 
++ /* Does this MCB belong to us?  */
++ #define OUR_MCB(mcb) ((mcb)->owner == _swap_psp)
++ 
++ /* Return a pointer to OUR first MCB */
++ #define FIRST_MCB(mcb) \
++   (FP_SEG (mcb) = _swap_psp - 1, FP_OFF (mcb) = 0, mcb)
++ 
++ /* Return a pointer to the next MCB */
++ #define NEXT_MCB(mcb) \
++   (FP_SEG (mcb) = FP_SEG (mcb) + mcb->length + 1, mcb)
++ 
++ int
++ _swap_free_block (_segment block)
++ {
++   _asm
++     {
++       mov	ax, block;
++       mov	es, ax;
++       mov	ah, 0x49		/* MS-DOS Free Allocated Memory */
++       int	0x21
++       jc	failed
++       xor	ax, ax;			/* success */
++     failed:
++     }
++ }
++ 
++ int
++ _swap_set_block (_segment block, unsigned int paras)
++ {
++   _asm
++     {
++       mov	ax, block
++       mov	es, ax
++       mov	bx, paras
++       mov	ah, 4ah			/* MS-DOS Set Block */
++       int	0x21
++       jc	failed
++       xor	ax, ax			/* success */
++     failed:
++     }
++ }
++ 
++ 
++ static unsigned int
++  _swap_allocate_block (unsigned int paras)
++ {
++   _asm
++     {
++       mov	bx, paras
++       mov	ah, 0x48	/* MS-DOS Allocate Memory */
++       int	0x21
++       jnc	done
++       mov	ax, 0x0000	/* failed */
++     done:
++     }
++ }
++ 
++ 
++ /* Free, one by one, the memoy blocks owned by us.  This excluded the
++    first block, which will be shrunk later.  _swap_orig_mcbs will be
++    zero-terminated. */
++ 
++ void
++ _swap_free_upper_blocks (void)
++ {
++   int i = 0;
++   struct mcb_info far *mcb;
++ 
++   FIRST_MCB (mcb);
++ 
++   while (mcb->id_byte == 'M')
++     {
++       NEXT_MCB (mcb);	/* leave the first block intact (for the moment)  */
++ 
++       if (OUR_MCB (mcb))
++ 	{
++ 	  if (i >= MAX_MSDOS_MCBS)
++ 	    SWAP_FATAL_ERROR (3);
++ 	  if (_swap_free_block (FP_SEG (mcb) + 1))
++ 	    SWAP_FATAL_ERROR (2);
++ 	  _swap_orig_mcbs[i].loc = FP_SEG (mcb) + 1;
++ 	  _swap_orig_mcbs[i].len = mcb->length;
++ 	  i++;
++ 	}
++     }
++   _swap_orig_mcbs[i].loc = 0x000;
++ }
++ 
++ 
++ /* Reclaim, one by one, the original memory blocks, as stored in
++    _swap_orig_mcbs.  From the MS-DOS point of view, this should be not
++    necessary, since MS-DOS keeps (to my knowledge) no internal record of
++    the memory allocation and the original MCBs are restored together with
++    the image.  But in this way we can catch the fatal condition when the
++    child has (illegally) left a resident grandchild.  Also we will be
++    warned if our methos fails with future MS-DOS versions.  */
++ 
++ void
++ _swap_reclaim_upper_blocks (void)
++ {
++   int i = 0;
++ 
++   while (_swap_orig_mcbs[i].loc != 0x000)
++     if (_swap_allocate_block (_swap_orig_mcbs[i].len)
++ 	!= _swap_orig_mcbs[i].loc)
++       SWAP_FATAL_ERROR (0);
++     else
++       i++;
++ }
++ 
++ 
++ int
++ _swap_load_and_execute_program (void)
++ {
++   _swap_parameter_block.environment_segment = _swap_environ_seg;
++   _swap_parameter_block.cmd_line_ptr = (char _far *) &_swap_cmdline;
++   _swap_parameter_block.fcb_ptr_1 = (char _far *) &_swap_fcb_1;
++   _swap_parameter_block.fcb_ptr_2 = (char _far *) &_swap_fcb_2;
++ 
++   /* The compiler saves si and di by himself.  */
++ 
++   _asm
++     {
++       push	ds		/* save ds */
++ 
++       mov	ax, cs		/* let es and ds point into code segment */
++       mov	es, ax
++       mov	ds, ax
++ 
++       mov	si, offset _swap_cmdline	/* parse commandline */
++       mov	di, offset _swap_fcb_1		/* create first FCB */
++       mov	ax, 0x2901		 /* MS-DOS Parse File Name */
++       int	0x21
++       mov	di, offset _swap_fcb_2		/* create second FCB */
++       mov	ax, 0x2901		  /* MS-DOS Parse File Name */
++       int	0x21
++       mov	bx, offset _swap_parameter_block /* es:bx */
++       mov	dx, offset _swap_path		 /* ds:dx */
++ 
++       mov	ax, 0x4b00		/* MS-DOS Load and Execute Program */
++       int	21h
++       mov	ax, 0ffffh		/* assume failure */
++       jc	failed
++ 
++       mov	ah, 0x4d		/* MS-DOS Get Return Code of Child */
++       int	21h
++       mov	_swap_return_code, ax	/* store return code */
++ 
++     failed:
++       pop	ds		/* restore ds */
++     }
++ }
++ 
++ int
++ _swap_spawn_child (void)	/* CAN'T TAKE PARAMETERS! */
++ {
++   /* void */			/* CAN'T HAVE LOCAL VARIABLES!  */
++ 
++ 	/* FROM HERE ON: DON'T REFER TO THE GLOBAL STACK! */
++   _asm
++     {
++       mov	cs:_swap_stack_pointer, sp	/* save stack position */
++       mov	cs:_swap_stack_segment, ss
++       cli					/* Interrupts off */
++       mov	ax, seg _swap_local_stack	/* Change stack */
++       mov	ss, ax				/* Point to top of new stack */
++       mov	sp, offset _swap_local_stack + STACK_SIZE
++       sti					/* Interrupts on */
++     }
++ 
++   if ((*_swap_out_function) (_swap_handle, _swap_environment,
++ 			     _swap_swapped_bytes))
++     return -1;
++ 
++   _swap_setup_environment ();
++   _swap_free_upper_blocks ();
++   _swap_set_block (_swap_psp, _swap_resident_paras);
++ 
++   _swap_load_and_execute_program ();		/* !!! BIG DEAL !!! */
++ 
++   if (_swap_set_block (_swap_psp, _swap_first_block_paras))
++     SWAP_FATAL_ERROR (0);
++   _swap_reclaim_upper_blocks ();
++ 
++   if ((*_swap_in_function) (_swap_handle, _swap_environment,
++ 			     _swap_swapped_bytes))
++     SWAP_FATAL_ERROR (1);
++ 
++   _asm
++     {
++       mov	ax, cs:_swap_stack_pointer	/* get saved stack position */
++       mov	bx, cs:_swap_stack_segment
++       cli					/* Interrupts off */
++       mov	ss, bx				/* Change stack */
++       mov	sp, ax
++       sti					/* Interrupts on */
++     }
++ 	/* THE GLOBAL STACK IS SAVE AGAIN! */
++ 
++   return _swap_return_code;
++ 
++ }
++ 
++ 
++ 
++ /* Display LEN bytes from string MSG and *immediately* return to DOS,
++    with CODE as return code.  This is a panic exit, only to be used
++    as a last resort.			~~~~~~~~~~			*/
++ 
++ void
++ _swap_fatal_error (char code, char CODE *msg, size_t len)
++ {
++   _asm
++     {
++       mov	ax, cs		/* ds = cs */
++       mov	ds, ax
++       mov	bx, 0x02	/* /dev/stderr */
++       mov	dx, offset _swap_err_msg_head
++       mov	cx, length _swap_err_msg_head
++       mov	ah, 0x40	/* MS-DOS Write Handle */
++       int	0x21
++       mov	dx, msg		/* message */
++       mov	cx, len		/* length */
++       mov	ah, 0x40
++       int	0x21
++       mov	al, code	/* bail out */
++       mov	ah, 0x4c	/* MS-DOS End Process */
++       int	0x21
++     }
++ }
++ 
++ 
++ /* Lowest level disk I/0:  */
++ 
++ /* Write SIZE bytes from BUFFER to HANDLE.  Returns 0 on success, -1 on
++    failure.  */
++ 
++ int
++ _swap_write_to_handle (int handle, void _far *buffer, off_t size)
++ {
++   while (size > 0L)
++     {
++       size_t bytes = (size_t) min (size, FILE_IO_BLKSIZE);
++       size_t bytes_written = _swap_write (handle, buffer, bytes);
++       if (bytes_written != bytes)
++ 	return -1;
++       FP_ADD (buffer, bytes);
++       size -= bytes;
++     }
++ 
++   return 0;
++ }
++ 
++ size_t
++ _swap_write (int handle, void _far *buffer, size_t bytes)
++ {
++   _asm
++     {
++       push	ds
++       mov	dx, word ptr buffer	/* offset */
++       mov	ax, word ptr buffer + 2	/* segment */
++       mov	ds, ax
++       mov	bx, handle
++       mov	cx, bytes
++       mov	ah, 0x40		/* MS-DOS Write Handle */
++       int	0x21
++       jnc	done
++       mov	ax, 0xffff
++     done:
++       pop	ds
++     }
++ }
++ 
++ 
++ /* Read SIZE bytes from HANDLE to BUFFER.  Returns 0 on success, -1 on
++    failure.  */
++ 
++ int
++ _swap_read_from_handle (int handle, void _far *buffer, off_t size)
++ {
++   _swap_rewind (handle);
++ 
++   while (size > 0L)
++     {
++       size_t bytes = (size_t) min (size, FILE_IO_BLKSIZE);
++       size_t bytes_read = _swap_read (handle, buffer, bytes);
++       if (bytes_read != bytes)
++ 	return -1;
++       FP_ADD (buffer, bytes);
++       size -= bytes;
++     }
++ 
++   return 0;
++ }
++ 
++ size_t
++ _swap_read (int handle, void _far *buffer, size_t bytes)
++ {
++   _asm
++     {
++       push	ds
++       mov	dx, word ptr buffer	/* offset */
++       mov	ax, word ptr buffer + 2 /* segment */
++       mov	ds, ax
++       mov	bx, handle
++       mov	cx, bytes
++       mov	ah, 0x3f		/* MS-DOS Read Handle */
++       int	0x21
++       jnc	done
++       mov	ax, 0xffff
++     done:
++       pop	ds
++     }
++ }
++ 
++ 
++ /* Rewind the file pointer for HANDLE to the beginning of the file.  */
++ 
++ int
++ _swap_rewind (int handle)
++ {
++   _asm
++     {
++       mov	bx, handle
++       mov	cx, 0x0000	/* offset = 0 */
++       mov	dx, 0x0000
++       mov	ax, 0x4200	/* MS-DOS Move File Pointer, (beginning) */
++       int	0x21
++       jc	failed
++       mov	ax, 0x0000
++     failed:
++     }
++ }
++ 
++ /* XMS interface */
++ 
++ int
++ _swap_xms_move_out (int handle, void _far *buffer, long bytes)
++ {
++   _swap_xms_move_table.length = bytes;
++   _swap_xms_move_table.src_handle = 0x0000;
++   _swap_xms_move_table.src_offset = (long) buffer;
++   _swap_xms_move_table.dest_handle = handle;
++   _swap_xms_move_table.dest_offset = 0L;
++ 
++   _swap_xms_move ();
++ }
++ 
++ int
++ _swap_xms_move_in (int handle, void _far *buffer, long bytes)
++ {
++   _swap_xms_move_table.length = bytes;
++   _swap_xms_move_table.dest_handle = 0x0000;
++   _swap_xms_move_table.dest_offset = (long) buffer;
++   _swap_xms_move_table.src_handle = handle;
++   _swap_xms_move_table.src_offset = 0L;
++ 
++   _swap_xms_move ();
++ }
++ 
++ int
++ _swap_xms_move (void)
++ {
++   _asm
++     {
++       push	ds
++       mov	si, offset _swap_xms_move_table
++       mov	ax, seg _swap_xms_move_table
++       mov	ds, ax
++       mov	ah, 0x0b
++       call	far ptr cs:[_swap_xms_control]
++       cmp	ax, 0x0001
++       jne	failed
++       mov	ax, 0x0000
++       jmp	done
++     failed:
++       mov	ax, 0xffff
++     done:
++       pop	ds
++     }
++ }
++ 
++ 
++ #if 0
++ 
++ /* EMS interface */
++ 
++ #define PHYSICAL_PAGE	0x00
++ 
++ int
++ _swap_move_to_ems (int handle, void _far *buffer, long bytes)
++ {
++   int logical_page = 0;
++ 
++   while (paras > 0)
++     {
++       unsigned int bytes = min (paras, 0x0400) << 4;
++       paras -= bytes >> 4;
++       if (ems_map_logical_page (handle, logical_page++))
++ 	return -1;
++       memcpy (swappee.ems_page_frame, &msdos_child_environment, bytes);
++     }
++ 
++   return 0;
++ }
++ 
++ 
++ int
++ _swap_move_from_ems (int handle, void _far *buffer, long bytes)
++ {
++   int logical_page = 0;
++ 
++   while (paras > 0)
++     {
++       unsigned int bytes = min (paras, 0x0400) << 4;
++       paras -= bytes >> 4;
++       if (ems_map_logical_page (handle, logical_page++))
++ 	return -1;
++       memcpy (&msdos_child_environment, swappee.ems_page_frame, bytes);
++     }
++ 
++   return 0;
++ }
++ 
++ 
++ int
++ _swap_ems_map_logical_page (int handle, int logical_page)
++ {
++   _asm
++     {
++       mov	dx, handle
++       mov	bx, logical_page
++       mov	ax, 0x4400 + PHYSICAL_PAGE	/* EMS Map Page */
++       int	0x67
++       mov	cl,  8				/* "mov ax, ah" */
++       shr	ax, cl
++     }
++ }
++ 
++ void
++ _swap_ems_save_page_map (int handle)
++ {
++   _asm
++     {
++       mov	dx, handle
++       mov	ah, 0x47			/* EMS Save Page Map */
++       int	0x67
++       mov	cl,  8				/* "mov ax, ah" */
++       shr	ax, cl
++     }
++ }
++ 
++ void
++ _swap_ems_restore_page_map (int handle)
++ {
++   _asm
++     {
++       mov	dx, handle
++       mov	ah, 0x48			/* EMS Restore Page Map */
++       int	0x67
++       mov	cl,  8				/* "mov ax, ah" */
++       shr	ax, cl
++     }
++ }
++ 
++ #endif /* NEVER */
++ 
++ /* Signal handling */
++ 
++ /* Simple ^C handler that displays a short message and waits for the child
++    to return.  Set a flag _swap_user_interrupt which can be used to
++    determine, whether such an event occured.
++    Note:  resetting the C library signals is NOT enough, since even the
++    default handlers use at least some library code.  */
++ 
++ void _interrupt _far
++ _swap_int23_handler (void)
++ {
++   _swap_user_interrupt = 1;
++ 
++   _asm
++     {
++       sti			/* want to access DOS */
++       mov	ax, cs		/* ds = cs */
++       mov	ds, ax
++       mov	bx, 0x02	/* /dev/stderr */
++       mov	dx, offset _swap_int23_handler_message
++       mov	cx, length _swap_int23_handler_message
++       mov	ah, 0x40	/* MS-DOS Write Handle */
++       int	0x21
++     }
++ }
++ 
++ /* The transient part starts here. */
++ #pragma check_stack ()
++ 
++ /* Install the global parameters.  Execute this as the first function, since
++    some macros need _swap_psp with the correct value.  */
++ 
++ void
++ install_parameters (char *path, char *cmdline, char *env, size_t size)
++ {
++   size_t len = strlen (cmdline);
++   struct mcb_info far *mcb;
++ 
++   _fstrcpy ((char _far *) _swap_path, (char _far *) path);
++ 
++   *_swap_cmdline = (char) len;
++   _fstrcpy ((char _far *) _swap_cmdline + 1, (char _far *) cmdline);
++   _swap_cmdline[len+1] = '\r';
++ 
++   _swap_environment_ptr = env;	/* this will be copied later */
++   _swap_environment_size = size;
++ 
++   _swap_psp = _psp;	/* put them into a save place. */
++   _swap_first_block_paras = FIRST_MCB (mcb)->length;
++ }
++ 
++ 
++ /* Allocate a swap file named NAME, making sure that at least SIZE bytes
++    are available on the disk.  Returns a MS-DOS handle (not to be
++    confused with a C file-descriptor!).  */
++ 
++ int
++ alloc_swap_file (char *name, off_t size)
++ {
++   struct diskfree_t disk_free;
++   unsigned drive;
++   off_t free;
++   int handle;
++ 
++   if (name == NULL || *name == '\0')	/* could create filename ourselves. */
++     return -1;
++ 
++   if (name[1] == ':')
++     drive = tolower (*name) - 'a' + 1;
++   else
++     /* Get current drive. */
++     _dos_getdrive (&drive);
++ 
++   _dos_getdiskfree (drive, &disk_free);
++ 
++   free = (off_t) disk_free.avail_clusters *
++     (off_t) disk_free.sectors_per_cluster * (off_t) disk_free.bytes_per_sector;
++ 
++   if (free < size)
++     return (-1);
++ 
++   if (_dos_creat (name, _A_NORMAL, &handle))
++     return (-1);
++   else
++     return handle;
++ }
++ 
++ /* Close and delete the temporary file.  */
++ 
++ unsigned int
++ cleanup_swap_file (unsigned int handle, char *name)
++ {
++   return !_dos_close (handle) && !unlink (name);
++ }
++ 
++ 
++ /* More XMS */
++ /* Microsoft's recommendation:  */
++ 
++ int
++ xms_installed (void)
++ {
++   _asm
++     {
++       mov	ax, 0x4300
++       int	0x2f
++       cmp	al, 0x80
++       jne	failed
++       mov	ax, 0x0001
++       jmp	done
++     failed:
++       mov	ax, 0x0000
++     done:
++     }
++ }
++ 
++ void
++ xms_get_control_function (void)
++ {
++   _asm
++     {
++       mov	ax, 0x4310
++       int	0x2f
++       mov	word ptr cs:_swap_xms_control, bx
++       mov	bx, es
++       mov	word ptr cs:_swap_xms_control + 2, bx
++     }
++ }
++ 
++ unsigned int
++ xms_allocate_memory (unsigned int kilobytes)
++ {
++   _asm
++     {
++       mov	dx, kilobytes
++       mov	ah, 0x09
++       call	far ptr cs:[_swap_xms_control]
++       cmp	ax, 0x0001
++       jne	failed
++       mov	ax, dx
++       jmp	done
++     failed:
++       mov	ax, 0xffff
++     done:
++     }
++ }
++ 
++ unsigned int
++ xms_free_memory (unsigned int handle)
++ {
++   _asm
++     {
++       mov	dx, handle
++       mov	ah, 0x0a
++       call	far ptr cs:[_swap_xms_control]
++       cmp	ax, 0x0001
++       je	done
++       mov	ax, 0x0000
++     done:
++     }
++ }
++ 
++ 
++ #if 0
++ 
++ /* More EMS */
++ 
++ /* Test for presence of LIM EMS 4.0.
++    (this procedure is taken from the LIM specification).  */
++ 
++ int
++ _swap_ems_present (void)
++ {
++   static char _far ems_id[] = "EMMXXXX0"; /* LIM EMS 4.0 identification. */
++   char _far *ems_device = (char _far *) _dos_getvect (0x67);
++ 
++   FP_OFF (ems_device) = 0x000a;
++ 
++   return !_fstrcmp (ems_id, ems_device);
++ }
++ 
++ /* Allocate pages from the EMS Manager.  Returns handle or -1 no error.  */
++ 
++ int
++ _swap_ems_alloc_pages (int n)
++ {
++   _asm
++     {
++       mov	bx, n
++       mov	ah, 0x43	/* EMS Allocate Pages */
++       int	0x67
++       cmp	ah, 0x00
++       jz	success
++       mov	ax, 0xffff	/* failure */
++       ret
++     success:
++       mov	ax, dx		/* return handle */
++     }
++ }
++ 
++ /* Free pages allocated for HANDLE.  Returns 0 if successful.  */
++ 
++ int
++ _swap_ems_free_pages (int handle)
++ {
++   _asm
++     {
++       mov	dx, handle
++       mov	ah, 0x45	/* EMS Free Pages */
++       int	0x67
++       mov	cl, 8		/* "mov ax, ah" */
++       shr	ax, cl
++     }
++ }
++ 
++ /* Return far pointer to EMS page frame.  */
++ 
++ void _far *
++ _swap_ems_get_page_frame (void)
++ {
++   void _far *frame = (void _far *) 0;
++ 
++   _asm
++     {
++       mov	ah, 0x41		/* EMS Page Frame */
++       int	0x67
++       cmp	ah, 0x00
++       jz	success
++       ret				/* failure */
++     success:
++       mov	word ptr frame + 2, bx	/* segment of page frame */
++     }
++ 
++   return frame;
++ }
++ 
++ #endif /* NEVER */
++ 
++ /* Return the last MCB owned by us.
++    WARNING:  This assumes that _swap_psp has already been set to _PSP
++ 	     (e.g. by install_parameters())   */
++ 
++ struct mcb_info far *
++ last_mcb (void)
++ {
++   struct mcb_info far *mcb;
++   struct mcb_info far *ret;
++ 
++   FIRST_MCB (mcb);
++ 
++   while (mcb->id_byte == 'M')
++     {
++       if (OUR_MCB (mcb))
++ 	ret = NEXT_MCB (mcb);
++       else
++ 	NEXT_MCB (mcb);
++     }
++ 
++   if (mcb->id_byte == 'Z')	/* found the end */
++     return ret;
++   else				/* error */
++     return NULL;
++ }
++ 
++ 
++ /* MODE is the preferred swapping mode, if XMS or EMS are requested but not
++    available, it is mapped to DISK.  PATH is the complete path of the program
++    to be executed, it must not be longer than MAX_MSDOS_PATH (=144).  CMDLINE
++    is the commandline to be passed to the program, it must not be longer than
++    MAX_MSDOS_CMDLINE (=126).  ENV is a well formed MS-DOS environment of
++    length LEN, including the terminating '\0's.  FILE is a valid filename,
++    which will be used for a possible disk swap file.  */
++ 
++ int
++ spawn_child (enum swapping_mode mode, char *path, char *cmdline, char *env,
++ 	     int len, char *file)
++ {
++   int rc;
++   unsigned int (*cleanup_function) (unsigned int handle,...);
++ 
++   install_parameters (path, cmdline, env, len);
++ 
++   _swap_environment = (char _far *) FIRST_TO_SWAP;
++   FP_PARA_ALIGN (_swap_environment);
++ 
++   _swap_swapped_bytes = (long) ((char _huge *) last_mcb ()
++ 			- (char _huge *) _swap_environment);
++ 
++   switch (mode)
++     {
++     case ems:			/* not implemented yet */
++       /* fall through */
++ 
++     case xms:
++       if (xms_installed ())
++ 	{
++ 	  xms_get_control_function ();
++ 	  _swap_out_function = _swap_xms_move_out;
++ 	  _swap_in_function = _swap_xms_move_in;
++ 	  cleanup_function = xms_free_memory;
++ 	  _swap_handle = xms_allocate_memory (
++ 	    (unsigned int) ((_swap_swapped_bytes + 0x03ff) >> 10) + 1);
++ 	  if (_swap_handle != -1)
++ 	    break;
++ 	}
++       /* fall through */
++ 
++     case disk:
++       _swap_out_function = _swap_write_to_handle;
++       _swap_in_function = _swap_read_from_handle;
++       cleanup_function = cleanup_swap_file;
++       _swap_handle = alloc_swap_file (file, _swap_swapped_bytes);
++       if (_swap_handle == -1)
++ 	{
++ 	  fprintf (stderr, "Out of swap space!\n");
++ 	  exit (0);
++ 	}
++     }
++ 
++   _swap_user_interrupt = 0;
++   _swap_caller_int23 = _dos_getvect (0x23);	/* temporarily disable ^C  */
++   _dos_setvect (0x23, _swap_int23_handler);
++ 
++   rc = _swap_spawn_child ();
++ 
++   if (_swap_user_interrupt)			/* did the user hit ^C ? */
++     rc = 0xffff;
++   _dos_setvect (0x23, _swap_caller_int23);
++ 
++   cleanup_function (_swap_handle, file);
++ 
++   return rc;
++ }
++ 
++ 
++ /* 
++  * Local Variables:
++  * mode:C
++  * minor-mode:auto-fill
++  * ChangeLog:ChangeLog
++  * compile-command:make
++  * End:
++  */
+diff -cBdNp e:/gnu/make/gnu/variable.c ./variable.c
+*** e:/gnu/make/gnu/variable.c	Tue Jul 24 00:53:28 1990
+--- ./variable.c	Tue Jul 24 00:55:26 1990
+*************** You should have received a copy of the G
+*** 16,21 ****
+--- 16,38 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/variable.c'v 3.58.0.3 90/07/20 11:27:29 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "commands.h"
+  #include "variable.h"
+*************** the Free Software Foundation, 675 Mass A
+*** 22,27 ****
+--- 39,51 ----
+  #include "dep.h"
+  #include "file.h"
+  
++ #ifdef MSDOS
++ #define DEFAULT_SHELL "command"
++ #else /* not MSDOS */
++ #define DEFAULT_SHELL "/bin/sh"
++ #endif /* not MSDOS */
++ 
++ #ifndef MSDOS
+  #ifdef	__GNUC__
+  #define	max(a, b) \
+    ({ register int __a = (a), __b = (b); __a > __b ? __a : __b; })
+*************** the Free Software Foundation, 675 Mass A
+*** 28,33 ****
+--- 52,58 ----
+  #else
+  #define max(a, b) ((a) > (b) ? (a) : (b))
+  #endif
++ #endif /* not MSDOS */
+  
+  
+  /* Hash table of all global variable definitions.  */
+*************** struct variable_set_list *current_variab
+*** 56,61 ****
+--- 81,96 ----
+  
+  static unsigned int variable_buffer_length;
+  static char *variable_buffer;
++ 
++ #ifdef MSDOS
++ static struct variable *define_variable_in_set (char *name,
++ 		unsigned int length, char *value, enum variable_origin origin,
++ 		int recursive, struct variable_set *set);
++ static void print_variable (struct variable *v, char *prefix);
++ static void print_variable_set (struct variable_set *set, char *prefix);
++ static void merge_variable_sets (struct variable_set *set0,
++ 				 struct variable_set *set1);
++ #endif /* MSDOS */
+  
+  /* Implement variables.  */
+  
+*************** define_automatic_variables ()
+*** 364,370 ****
+  
+    /* This won't override any definition, but it
+       will provide one if there isn't one there.  */
+!   v = define_variable ("SHELL", 5, "/bin/sh", o_default, 0);
+  
+    /* Don't let SHELL come from the environment
+       if MAKELEVEL is 0.  Also, SHELL must not be empty.  */
+--- 399,405 ----
+  
+    /* This won't override any definition, but it
+       will provide one if there isn't one there.  */
+!   v = define_variable ("SHELL", 5, DEFAULT_SHELL, o_default, 0);
+  
+    /* Don't let SHELL come from the environment
+       if MAKELEVEL is 0.  Also, SHELL must not be empty.  */
+*************** define_automatic_variables ()
+*** 371,378 ****
+    if (*v->value == '\0' || (v->origin == o_env && makelevel == 0))
+      {
+        v->origin = o_file;
+!       v->value = savestring ("/bin/sh", 7);
+      }
+  }
+  
+  /* Subroutine of variable_expand and friends:
+--- 406,414 ----
+    if (*v->value == '\0' || (v->origin == o_env && makelevel == 0))
+      {
+        v->origin = o_file;
+!       v->value = savestring (DEFAULT_SHELL, 7);
+      }
++ 
+  }
+  
+  /* Subroutine of variable_expand and friends:
+diff -cBdNp e:/gnu/make/gnu/variable.h ./variable.h
+*** e:/gnu/make/gnu/variable.h	Tue Jul 24 00:53:28 1990
+--- ./variable.h	Tue Jul 24 00:55:28 1990
+*************** You should have received a copy of the G
+*** 15,20 ****
+--- 15,37 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/variable.h'v 3.58.0.2 90/07/17 03:32:57 tho Exp $
++  */
++ 
+  /* Codes in a variable definition saying where the definition came from.
+     Increasing numeric values signify less-overridable definitions.  */
+  enum variable_origin
+*************** struct variable_set_list
+*** 63,94 ****
+  extern struct variable_set_list *current_variable_set_list;
+  
+  
+  extern char *variable_buffer_output ();
+  extern char *initialize_variable_output ();
+  extern char *save_variable_output ();
+  extern void restore_variable_output ();
+  
+  extern void push_new_variable_scope (), pop_variable_scope ();
+  
+  extern int handle_function ();
+! 
+  extern char *variable_expand (), *allocated_variable_expand ();
+  extern char *variable_expand_for_file ();
+  extern char *allocated_variable_expand_for_file ();
+  extern char *expand_argument ();
+  
+  extern void define_automatic_variables ();
+  extern void initialize_file_variables ();
+  extern void print_file_variables ();
+  
+  extern void merge_variable_set_lists ();
+  
+  extern int try_variable_definition ();
+  
+  extern struct variable *lookup_variable (), *define_variable ();
+  extern struct variable *define_variable_for_file ();
+  
+  extern int pattern_matches ();
+  extern char *subst_expand (), *patsubst_expand ();
+  
+  extern char **target_environment ();
+--- 80,177 ----
+  extern struct variable_set_list *current_variable_set_list;
+  
+  
++ /* variable.c */
++ extern  void print_variable_data_base (void);
++ 
++ #ifdef  MSDOS
++ extern  char *variable_buffer_output (char *ptr, char *string,
++ 				      unsigned int length);
++ extern  char *initialize_variable_output (void);
++ extern  char *save_variable_output (void);
++ extern  void restore_variable_output (char *save);
++ #else /* not MSDOS */
+  extern char *variable_buffer_output ();
+  extern char *initialize_variable_output ();
+  extern char *save_variable_output ();
+  extern void restore_variable_output ();
++ #endif /* not MSDOS */
+  
++ #ifdef  MSDOS
++ extern  void push_new_variable_scope (void);
++ extern  void pop_variable_scope (void);
++ #else /* not MSDOS */
+  extern void push_new_variable_scope (), pop_variable_scope ();
++ #endif /* not MSDOS */
+  
++ #ifdef  MSDOS
++ extern  int handle_function (char **op, char **stringp);
++ #else /* not MSDOS */
+  extern int handle_function ();
+! #endif /* not MSDOS */
+!   
+! #ifdef  MSDOS
+! extern  char *allocated_variable_expand (char *line);
+! extern  char *allocated_var_exp_for_file (char *line, struct file *file);
+! extern  char *expand_argument (char *str, char *end);
+! extern  char *variable_expand (char *line);
+! extern  char *variable_expand_for_file (char *line, struct file *file);
+! #else /* not MSDOS */
+  extern char *variable_expand (), *allocated_variable_expand ();
+  extern char *variable_expand_for_file ();
+  extern char *allocated_variable_expand_for_file ();
+  extern char *expand_argument ();
++ #endif /* not MSDOS */
+  
++ #ifdef  MSDOS
++ extern  void define_automatic_variables (void);
++ extern  void initialize_file_variables (struct file *file);
++ #else /* not MSDOS */
+  extern void define_automatic_variables ();
+  extern void initialize_file_variables ();
++ #endif /* not MSDOS */
++ 
+  extern void print_file_variables ();
+  
++ #ifdef MSDOS
++ extern void merge_variable_set_lists (struct variable_set_list **setlist0,
++ 				      struct variable_set_list *setlist1);
++ #else /* not MSDOS */
+  extern void merge_variable_set_lists ();
++ #endif /* not MSDOS */
++ 
+  
++ #ifdef  MSDOS
++ extern  int try_variable_definition (char *line, enum variable_origin origin);
++ #else /* not MSDOS */
+  extern int try_variable_definition ();
++ #endif /* not MSDOS */
+  
++ #ifdef  MSDOS
++ extern  struct variable *define_variable (char *name, unsigned int length,
++ 		char *value, enum variable_origin origin, int recursive);
++ extern  struct variable *define_variable_for_file (char *name,
++ 		unsigned int length, char *value,
++ 		enum variable_origin origin, int recursive, struct file *file);
++ extern  struct variable *lookup_variable (char *name, unsigned int length);
++ #else /* not MSDOS */
+  extern struct variable *lookup_variable (), *define_variable ();
+  extern struct variable *define_variable_for_file ();
++ #endif /* not MSDOS */
+  
++ #ifdef  MSDOS
++ extern int pattern_matches (char *pattern, char *percent, char *word);
++ extern char *patsubst_expand (char *o, char *text, char *pattern,
++ 		char *replace, char *pattern_percent, char *replace_percent);
++ extern char *subst_expand (char *o, char *text, char *subst, char *replace,
++ 		unsigned int slen, unsigned int rlen, int by_word,
++ 		int suffix_only);
++ #else /* not MSDOS */
+  extern int pattern_matches ();
+  extern char *subst_expand (), *patsubst_expand ();
++ #endif /* not MSDOS */
+  
++ #ifdef  MSDOS
++ extern  char **target_environment (struct file *file);
++ #else /* not MSDOS */
+  extern char **target_environment ();
++ #endif /* not MSDOS */
+diff -cBdNp e:/gnu/make/gnu/version.c ./version.c
+*** e:/gnu/make/gnu/version.c	Tue Jul 24 00:53:30 1990
+--- ./version.c	Tue Jul 24 00:55:30 1990
+***************
+*** 1,4 ****
+--- 1,9 ----
+  char *version_string = "3.58";
++ 
++ #ifdef MSDOS
++ char *msdos_version_string = __DATE__ ", " __TIME__;
++ #endif /* MSDOS */
++ 
+  
+  /*
+    Local variables:
+diff -cBdNp e:/gnu/make/gnu/vpath.c ./vpath.c
+*** e:/gnu/make/gnu/vpath.c	Tue Jul 24 00:53:32 1990
+--- ./vpath.c	Tue Jul 24 00:55:34 1990
+*************** You should have received a copy of the G
+*** 15,24 ****
+--- 15,46 ----
+  along with GNU Make; see the file COPYING.  If not, write to
+  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.  */
+  
++ /*
++  * MS-DOS port (c) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>
++  *
++  * To this port, the same copying conditions apply as to the
++  * original release.
++  *
++  * IMPORTANT:
++  * This file is not identical to the original GNU release!
++  * You should have received this code as patch to the official
++  * GNU release.
++  *
++  * MORE IMPORTANT:
++  * This port comes with ABSOLUTELY NO WARRANTY.
++  *
++  * $Header: e:/gnu/make/RCS/vpath.c'v 3.58.0.2 90/07/17 23:21:21 tho Exp $
++  */
++ 
+  #include "make.h"
+  #include "file.h"
+  #include "variable.h"
+  
++ #ifdef MSDOS
++ #define PATHSEP	';'
++ #else
++ #define PATHSEP	':'
++ #endif
+  
+  /* Structure used to represent a selective VPATH searchpath.  */
+  
+*************** static struct vpath *vpaths;
+*** 40,46 ****
+--- 62,72 ----
+  
+  static struct vpath *general_vpath;
+  
++ #ifdef MSDOS
++ static  int selective_vpath_search (struct vpath *path, char **file);
++ #else /* not MSDOS */
+  static int selective_vpath_search ();
++ #endif /* not MSDOS */
+  
+  /* Reverse the chain of selective VPATH lists so they
+     will be searched in the order given in the makefiles
+*************** construct_vpath_list (pattern, dirpath)
+*** 149,155 ****
+  
+    /* Skip over any initial colons.  */
+    p = dirpath;
+!   while (*p == ':')
+      ++p;
+  
+    /* Figure out the maximum number of VPATH entries and
+--- 175,181 ----
+  
+    /* Skip over any initial colons.  */
+    p = dirpath;
+!   while (*p == PATHSEP)
+      ++p;
+  
+    /* Figure out the maximum number of VPATH entries and
+*************** construct_vpath_list (pattern, dirpath)
+*** 158,164 ****
+       increment our estimated number for each colon we find.  */
+    maxelem = 2;
+    while (*p != '\0')
+!     if (*p++ == ':')
+        ++maxelem;
+  
+    vpath = (char **) xmalloc (maxelem * sizeof (char *));
+--- 184,190 ----
+       increment our estimated number for each colon we find.  */
+    maxelem = 2;
+    while (*p != '\0')
+!     if (*p++ == PATHSEP)
+        ++maxelem;
+  
+    vpath = (char **) xmalloc (maxelem * sizeof (char *));
+*************** construct_vpath_list (pattern, dirpath)
+*** 172,178 ****
+        unsigned int len;
+  
+        /* Find the next entry.  */
+!       while (*p != '\0' && *p == ':')
+  	++p;
+        if (*p == '\0')
+  	break;
+--- 198,204 ----
+        unsigned int len;
+  
+        /* Find the next entry.  */
+!       while (*p != '\0' && *p == PATHSEP)
+  	++p;
+        if (*p == '\0')
+  	break;
+*************** construct_vpath_list (pattern, dirpath)
+*** 179,185 ****
+  
+        /* Find the end of this entry.  */
+        v = p;
+!       while (*p != '\0' && *p != ':')
+  	++p;
+  
+        len = p - v;
+--- 205,211 ----
+  
+        /* Find the end of this entry.  */
+        v = p;
+!       while (*p != '\0' && *p != PATHSEP)
+  	++p;
+  
+        len = p - v;
+*************** print_vpath_data_base ()
+*** 379,385 ****
+  
+        for (i = 0; v->searchpath[i] != 0; ++i)
+  	printf ("%s%c", v->searchpath[i],
+! 		v->searchpath[i + 1] == 0 ? '\n' : ':');
+      }
+  
+    if (vpaths == 0)
+--- 405,411 ----
+  
+        for (i = 0; v->searchpath[i] != 0; ++i)
+  	printf ("%s%c", v->searchpath[i],
+! 		v->searchpath[i + 1] == 0 ? '\n' : PATHSEP);
+      }
+  
+    if (vpaths == 0)
+*************** print_vpath_data_base ()
+*** 397,402 ****
+        fputs ("\n# General (`VPATH' variable) search path:\n# ", stdout);
+  
+        for (i = 0; path[i] != 0; ++i)
+! 	printf ("%s%c", path[i], path[i + 1] == 0 ? '\n' : ':');
+      }
+  }
+--- 423,428 ----
+        fputs ("\n# General (`VPATH' variable) search path:\n# ", stdout);
+  
+        for (i = 0; path[i] != 0; ++i)
+! 	printf ("%s%c", path[i], path[i + 1] == 0 ? '\n' : PATHSEP);
+      }
+  }
+diff -cBdNp e:/gnu/make/gnu/zipscan.c ./zipscan.c
+*** e:/gnu/make/gnu/zipscan.c	Tue Jul 24 00:56:27 1990
+--- ./zipscan.c	Tue Jul 24 00:55:50 1990
+***************
+*** 0 ****
+--- 1,794 ----
++ /*  zipscan.c - scan .zip archives
++     Copyright (C) 1990 by Thorsten Ohl, td12@ddagsi3.bitnet
++ 
++     This program is free software; you can redistribute it and/or modify
++     it under the terms of the GNU General Public License as published by
++     the Free Software Foundation; either version 1, or (at your option)
++     any later version.
++ 
++     This program is distributed in the hope that it will be useful,
++     but WITHOUT ANY WARRANTY; without even the implied warranty of
++     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++     GNU General Public License for more details.
++ 
++     You should have received a copy of the GNU General Public License
++     along with this program; if not, write to the Free Software
++     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ 
++     IMPORTANT:
++ 
++     This code is not an official part of the GNU project and the
++     author is not affiliated to the Free Software Foundation.
++     He just likes their code and spirit.  */
++ 
++ static char RCS_id[] =
++ "$Header: e:/gnu/make/RCS/zipscan.c'v 0.2 90/07/18 22:23:26 tho Exp $";
++ 
++ /* The following section is taken from the file appnote.txt
++    (from the PK(UN)?ZIP v1.1 distribution).  */
++ 
++ /*
++ 
++ General Format of a ZIP file
++ ----------------------------
++ 
++   Files stored in arbitrary order.  Large zipfiles can span multiple
++   diskette media.
++ 
++   Overall zipfile format:
++ 
++     [local file header+file data] . . .
++     [central directory] end of central directory record
++ 
++ 
++   A.  Local file header:
++ 
++ 	local file header signature	4 bytes  (0x04034b50)
++ 	version needed to extract	2 bytes
++ 	general purpose bit flag	2 bytes
++ 	compression method		2 bytes
++ 	last mod file time 		2 bytes
++ 	last mod file date		2 bytes
++ 	crc-32   			4 bytes
++ 	compressed size			4 bytes
++ 	uncompressed size		4 bytes
++ 	filename length			2 bytes
++ 	extra field length		2 bytes
++ 
++ 	filename (variable size)
++ 	extra field (variable size)
++ 
++ 
++   B.  Central directory structure:
++ 
++       [file header] . . .  end of central dir record
++ 
++       File header:
++ 
++ 	central file header signature	4 bytes  (0x02014b50)
++ 	version made by			2 bytes
++ 	version needed to extract	2 bytes
++ 	general purpose bit flag	2 bytes
++ 	compression method		2 bytes
++ 	last mod file time 		2 bytes
++ 	last mod file date		2 bytes
++ 	crc-32   			4 bytes
++ 	compressed size			4 bytes
++ 	uncompressed size		4 bytes
++ 	filename length			2 bytes
++ 	extra field length		2 bytes
++ 	file comment length		2 bytes
++ 	disk number start		2 bytes
++ 	internal file attributes	2 bytes
++ 	external file attributes	4 bytes
++ 	relative offset of local header	4 bytes
++ 
++ 	filename (variable size)
++ 	extra field (variable size)
++ 	file comment (variable size)
++ 
++       End of central dir record:
++ 
++ 	end of central dir signature	4 bytes  (0x06054b50)
++ 	number of this disk		2 bytes
++ 	number of the disk with the
++ 	start of the central directory	2 bytes
++ 	total number of entries in
++ 	the central dir on this disk	2 bytes
++ 	total number of entries in
++ 	the central dir			2 bytes
++ 	size of the central directory   4 bytes
++ 	offset of start of central
++ 	directory with respect to
++ 	the starting disk number	4 bytes
++ 	zipfile comment length		2 bytes
++ 	zipfile comment (variable size)
++ 
++ 
++ 
++ 
++   C.  Explanation of fields:
++ 
++       version made by
++ 
++ 	  The upper byte indicates the host system (OS) for the
++ 	  file.  Software can use this information to determine
++ 	  the line record format for text files etc.  The current
++ 	  mappings are:
++ 
++ 	  0 - MS-DOS and OS/2 (F.A.T. file systems)
++ 	  1 - Amiga			2 - VMS
++ 	  3 - *nix			4 - VM/CMS
++ 	  5 - Atari ST                  6 - OS/2 H.P.F.S.
++ 	  7 - Macintosh			8 - Z-System
++ 	  9 - CP/M			10 thru 255 - unused
++ 
++ 	  The lower byte indicates the version number of the
++ 	  software used to encode the file.  The value/10
++ 	  indicates the major version number, and the value
++ 	  mod 10 is the minor version number.
++ 
++       version needed to extract
++ 
++ 	  The minimum software version needed to extract the
++ 	  file, mapped as above.
++ 
++       general purpose bit flag:
++ 
++           bit 0: If set, indicates that the file is encrypted.
++           bit 1: If the compression method used was type 6,
++ 		 Imploding, then this bit, if set, indicates
++ 		 an 8K sliding dictionary was used.  If clear,
++ 		 then a 4K sliding dictionary was used.
++           bit 2: If the compression method used was type 6,
++ 		 Imploding, then this bit, if set, indicates
++ 		 an 3 Shannon-Fano trees were used to encode the
++ 		 sliding dictionary output.  If clear, then 2
++ 		 Shannon-Fano trees were used.
++ 	  Note:  Bits 1 and 2 are undefined if the compression
++ 		 method is other than type 6 (Imploding).
++ 
++           The upper three bits are reserved and used internally
++ 	  by the software when processing the zipfile.  The
++ 	  remaining bits are unused in version 1.0.
++ 
++       compression method:
++ 
++ 	  (see accompanying documentation for algorithm
++ 	  descriptions)
++ 
++ 	  0 - The file is stored (no compression)
++ 	  1 - The file is Shrunk
++ 	  2 - The file is Reduced with compression factor 1
++ 	  3 - The file is Reduced with compression factor 2
++ 	  4 - The file is Reduced with compression factor 3
++ 	  5 - The file is Reduced with compression factor 4
++           6 - The file is Imploded
++ 
++       date and time fields:
++ 
++ 	  The date and time are encoded in standard MS-DOS
++ 	  format.
++ 
++       CRC-32:
++ 
++ 	  The CRC-32 algorithm was generously contributed by
++ 	  David Schwaderer and can be found in his excellent
++ 	  book "C Programmers Guide to NetBIOS" published by
++ 	  Howard W. Sams & Co. Inc.  The 'magic number' for
++ 	  the CRC is 0xdebb20e3.  The proper CRC pre and post
++ 	  conditioning is used, meaning that the CRC register
++ 	  is pre-conditioned with all ones (a starting value
++ 	  of 0xffffffff) and the value is post-conditioned by
++ 	  taking the one's complement of the CRC residual.
++ 	
++       compressed size:
++       uncompressed size:
++ 
++ 	  The size of the file compressed and uncompressed,
++ 	  respectively.
++ 
++       filename length:
++       extra field length:
++       file comment length:
++ 
++ 	  The length of the filename, extra field, and comment
++ 	  fields respectively.  The combined length of any
++ 	  directory record and these three fields should not
++ 	  generally exceed 65,535 bytes.
++ 
++       disk number start:
++ 
++ 	  The number of the disk on which this file begins.
++ 
++       internal file attributes:
++ 
++ 	  The lowest bit of this field indicates, if set, that
++ 	  the file is apparently an ASCII or text file.  If not
++ 	  set, that the file apparently contains binary data.
++ 	  The remaining bits are unused in version 1.0.
++ 
++       external file attributes:
++ 
++ 	  The mapping of the external attributes is
++ 	  host-system dependent (see 'version made by').  For
++ 	  MS-DOS, the low order byte is the MS-DOS directory
++ 	  attribute byte.
++ 
++       relative offset of local header:
++ 
++ 	  This is the offset from the start of the first disk on
++ 	  which this file appears, to where the local header should
++ 	  be found.
++ 
++       filename:
++ 
++ 	  The name of the file, with optional relative path.
++ 	  The path stored should not contain a drive or
++ 	  device letter, or a leading slash.  All slashes
++ 	  should be forward slashes '/' as opposed to
++ 	  backwards slashes '\' for compatibility with Amiga
++ 	  and Unix file systems etc.
++ 
++       extra field:
++ 
++ 	  This is for future expansion.  If additional information
++ 	  needs to be stored in the future, it should be stored
++ 	  here.  Earlier versions of the software can then safely
++ 	  skip this file, and find the next file or header.  This
++ 	  field will be 0 length in version 1.0.
++ 
++ 	  In order to allow different programs and different types 
++ 	  of information to be stored in the 'extra' field in .ZIP 
++ 	  files, the following structure should be used for all 
++ 	  programs storing data in this field:
++ 
++ 	  header1+data1 + header2+data2 . . .
++ 
++ 	  Each header should consist of:
++ 
++ 	    Header ID - 2 bytes
++ 	    Data Size - 2 bytes
++ 
++ 	  Note: all fields stored in Intel low-byte/high-byte order.
++ 
++ 	  The Header ID field indicates the type of data that is in 
++ 	  the following data block.
++       
++ 	  Header ID's of 0 thru 31 are reserved for use by PKWARE.  
++ 	  The remaining ID's can be used by third party vendors for 
++ 	  proprietary usage.
++ 
++ 	  The Data Size field indicates the size of the following 
++ 	  data block. Programs can use this value to skip to the 
++ 	  next header block, passing over any data blocks that are 
++ 	  not of interest.
++ 
++ 	  Note: As stated above, the size of the entire .ZIP file
++ 		header, including the filename, comment, and extra
++ 		field should not exceed 64K in size.
++ 
++ 	  In case two different programs should appropriate the same 
++ 	  Header ID value, it is strongly recommended that each 
++ 	  program place a unique signature of at least two bytes in 
++ 	  size (and preferably 4 bytes or bigger) at the start of 
++ 	  each data area.  Every program should verify that it's 
++ 	  unique signature is present, in addition to the Header ID 
++ 	  value being correct, before assuming that it is a block of 
++ 	  known type.
++ 
++       file comment:
++ 
++ 	  The comment for this file.
++ 
++       number of this disk:
++ 
++ 	  The number of this disk, which contains central
++ 	  directory end record.
++ 
++       number of the disk with the start of the central directory:
++ 
++ 	  The number of the disk on which the central
++ 	  directory starts.
++ 
++       total number of entries in the central dir on this disk:
++ 
++ 	  The number of central directory entries on this disk.
++ 	
++       total number of entries in the central dir:
++ 
++ 	  The total number of files in the zipfile.
++ 
++ 
++       size of the central directory:
++ 
++ 	  The size (in bytes) of the entire central directory.
++ 
++       offset of start of central directory with respect to
++       the starting disk number:
++ 
++ 	  Offset of the start of the central direcory on the
++ 	  disk on which the central directory starts.
++ 
++       zipfile comment length:
++ 
++ 	  The length of the comment for this zipfile.
++ 
++       zipfile comment:
++ 
++ 	  The comment for this zipfile.
++ 
++ 
++   D.  General notes:
++ 
++       1)  All fields unless otherwise noted are unsigned and stored
++ 	  in Intel low-byte:high-byte, low-word:high-word order.
++ 
++       2)  String fields are not null terminated, since the
++ 	  length is given explicitly.
++ 
++       3)  Local headers should not span disk boundries.  Also, even
++ 	  though the central directory can span disk boundries, no
++ 	  single record in the central directory should be split
++ 	  across disks.
++ 
++       4)  The entries in the central directory may not necessarily
++ 	  be in the same order that files appear in the zipfile.
++ 
++ */
++ 
++ /* Code starts here */
++ 
++ #include <stdio.h>
++ #include <stdlib.h>
++ #include <stdarg.h>
++ #include <string.h>
++ #include <fcntl.h>
++ #include <time.h>
++ #include <malloc.h>
++ #include <io.h>
++ 
++ 
++ #pragma pack(2)
++ 
++ struct local_zip_header
++ {
++   unsigned long	signature;	/* 0x04034b50 */
++   unsigned int	extr_ver;	/* version needed to extract */
++   unsigned int	bit_flag;	/* general purpose bit flag */
++   unsigned int	method;		/* compression method */
++   unsigned int	last_mod_time; 	/* last mod file time */
++   unsigned int	last_mod_date;	/* last mod file date */
++   unsigned long	crc;		/* crc-32 */
++   unsigned long comp_size;	/* compressed size */
++   unsigned long uncomp_size;	/* uncompressed size */
++   size_t	name_len;	/* filename length */
++   size_t	extra_len;	/* extra field length */
++ 
++   /* filename (variable size) */
++   /* extra field (variable size) */
++ };
++ 
++ struct zip_header
++ {
++   unsigned long	signature;	/* 0x02014b50 */
++   unsigned int	creat_ver;	/* version made by */
++   unsigned int	extr_ver;	/* version needed to extract */
++   unsigned int	bit_flag;	/* general purpose bit flag */
++   unsigned int	method;		/* compression method */
++   unsigned int	last_mod_time; 	/* last mod file time */
++   unsigned int	last_mod_date;	/* last mod file date */
++   unsigned long	crc;		/* crc-32 */
++   unsigned long comp_size;	/* compressed size */
++   unsigned long uncomp_size;	/* uncompressed size */
++   size_t	name_len;	/* filename length */
++   size_t	extra_len;	/* extra field length */
++   size_t	comment_len;	/* file comment length */
++   unsigned int	disk_start;	/* disk number start */
++   unsigned int	int_attrib;	/* internal file attributes */
++   unsigned long	ext_attrib;	/* external file attributes */
++   unsigned long offset;		/* relative offset of local header */
++ 
++   /* filename (variable size) */
++   /* extra field (variable size) */
++   /* file comment (variable size) */
++ };
++ 
++ struct central_dir
++ {
++   unsigned long	signature;	/* 0x06054b50 */
++   unsigned int	disk_num;	/* number of this disk */
++   unsigned int	cd_disk_num;	/* number of the disk with the start
++ 				   of the central directory */
++   unsigned int	dir_entries;	/* total number of entries in the
++ 				   central dir on this disk */
++   unsigned int	total_entries;	/* total number of entries in the
++ 				   central dir */
++   unsigned long	dir_size;	/* size of the central directory */
++   unsigned long	dir_offset;	/* offset of start of central directory
++ 				   with respect to the starting disk number */
++   size_t	comment_len;	/* zipfile comment length */
++ 
++   /* zipfile comment (variable size) */
++ };
++ 
++ #pragma pack()
++ 
++ 
++ char *zip_get_first (char *filename, int *fd_ptr,
++ 		     struct local_zip_header *header,
++ 		     long *header_pos, long *data_pos);
++ char *zip_get_next (int fd, struct local_zip_header *header,
++ 		    long *header_pos, long *data_pos);
++ 
++ long ar_scan (char *archive, long (*f) (int, char *, long, long, long, long,
++ 	      int, int, int, long), long arg);
++ static long ar_member_pos (int desc, char *name, long hdrpos, long datapos,
++ 			   long size, long date, int uid, int gid, int mode,
++ 			   char *mem);
++ long ar_name_equal (char *name, char *mem);
++ long ar_member_touch (char *arname, char *memname);
++ 
++ time_t dos_time (unsigned int time, unsigned int date);
++ 
++ extern void *xmalloc (size_t size);
++ 
++ #ifdef TEST
++ char *program_name;
++ void fatal (int code, char *format, ... );
++ #endif
++ 
++ static int month_offset[12] =
++ {
++     0, /* January */
++    31, /* February */
++    59, /* March */
++    90, /* April */
++   120, /* May */
++   151, /* June */
++   181, /* July */
++   212, /* August */
++   243, /* September */
++   273, /* October */
++   304, /* November */
++   334, /* December */
++ };
++ 
++ 
++ #define leap_year(n)	(((n) & 0x0600) == 0)	/* 1980 was! */
++ #define year(n)		(((n) & 0xff00) >> 9)
++ #define month(n)	(((n) & 0x01e0) >> 5)
++ #define day(n)		((n) & 0x001f)
++ 
++ #define hour(n)		(((n) & 0xf800) >> 11)
++ #define minutes(n)	(((n) & 0x07e0) >> 5)
++ #define seconds(n)	(((n) & 0x001f) << 1)
++ 
++ time_t
++ dos_time (unsigned int time, unsigned int date)
++ {
++   time_t result = 3652;		/* 1970 - 1980, (incl. 2 leap years) */
++ 
++   result += year (date) * 365L;
++   result += year (date) >> 2;	/* add leap years! */
++ 
++   result += month_offset[month (date) - 1] + day (date);
++ 
++   if (leap_year(date) && month (date) > 2)	/* After Feb. in leap year */
++     result++;
++   result *= 24L;		/* convert to hours */
++   result += hour (time);
++ 
++   result *= 60L;		/* convert to minutes */
++   result += minutes (time);
++ 
++   result *= 60L;		/* convert to seconds */
++   result += seconds (time);
++ 
++   return result + timezone;
++ }
++ 
++ /* Magic numbers.  */
++ 
++ #define ZIP_HEADER_SIGNATURE	0x02014b50	/* "\x50\x4b" = "PK" !!! */
++ #define LOCAL_HEADER_SIGNATURE	0x04034b50
++ #define CENTRAL_DIR_SIGNATURE	0x06054b50
++ 
++ char *
++ zip_get_first (char *filename, int *fd_ptr, struct local_zip_header *header,
++ 	       long *header_pos, long *data_pos)
++ {
++   tzset ();			/* in case the caller forgot */
++ 
++   *fd_ptr = open (filename, O_RDONLY|O_BINARY);
++ 
++   if (*fd_ptr < 0)
++     return NULL;
++ 
++   return zip_get_next (*fd_ptr, header, header_pos, data_pos);
++ }
++ 
++ 
++ char *
++ zip_get_next (int fd, struct local_zip_header *header,
++ 	      long *header_pos, long *data_pos)
++ {
++   size_t bytes;
++   char *member_name = NULL;
++ 
++   *header_pos = tell (fd);
++ 
++   bytes = read (fd, (char *) header, sizeof (struct local_zip_header));
++   if (bytes != sizeof (struct local_zip_header))
++     return NULL;
++ 
++   if (header->signature != LOCAL_HEADER_SIGNATURE)
++     return NULL;
++ 
++   member_name = (char *) xmalloc (header->name_len + 1);
++ 
++   bytes = read (fd, member_name, header->name_len);
++   if (bytes != header->name_len)
++     return NULL;
++ 
++   member_name[header->name_len] = '\0';
++ 
++   *data_pos = *header_pos + sizeof (struct local_zip_header)
++ 	      + header->name_len + header->extra_len;
++ 
++   lseek (fd, header->comp_size + (long) header->extra_len, SEEK_CUR);
++ 
++   return strlwr (member_name);
++ }
++ 
++ 
++ /* Takes three arguments ARCHIVE, FUNCTION and ARG.
++ 
++    Open the archive named ARCHIVE, find its members one by one,
++    and for each one call FUNCTION with the following arguments:
++      archive file descriptor for reading the data,
++      member name,
++      member header position in file,
++      member data position in file,
++      member data size,
++      member date,
++      member uid,
++      member gid,
++      member protection mode,
++      ARG.
++ 
++    The descriptor is poised to read the data of the member
++    when FUNCTION is called.  It does not matter how much
++    data FUNCTION reads.
++ 
++    If FUNCTION returns nonzero, we immediately return
++    what FUNCTION returned.
++ 
++    Returns -1 if archive does not exist,
++    Returns -2 if archive has invalid format.
++    Returns 0 if have scanned successfully.  */
++ 
++ long
++ ar_scan (char *archive,
++ 	 long (*f) (int, char *, long, long, long, long, int, int, int, long),
++ 	 long arg)
++ {
++   int fd;
++   struct local_zip_header header;
++   long header_pos;
++   long data_pos;
++   char *name = zip_get_first (archive, &fd, &header, &header_pos, &data_pos);
++ 
++   if (fd < 0)
++     return -1L;
++   if (name == NULL)
++     return -2L;
++ 
++   while (name && *name)
++     {
++       time_t time_buf = dos_time (header.last_mod_time, header.last_mod_date);
++ 
++       long fnval = (*f) (fd, name,
++ 			 header_pos, data_pos,
++ 			 header.uncomp_size,
++ 			 time_buf,
++ 			 0, 0, 0,
++ 			 arg);
++ 
++       if (fnval)
++ 	{
++ 	  close (fd);
++ 	  return fnval;
++ 	}
++ 
++       free (name);
++ 
++       name = zip_get_next (fd, &header, &header_pos, &data_pos);
++     }
++ 
++   close (fd);
++   return 0L;
++ }
++ 
++ /* Return nonzero iff NAME matches MEM.  If NAME is longer than
++    sizeof (struct ar_hdr.ar_name), MEM may be the truncated version.  */
++ 
++ long
++ ar_name_equal (name, mem)
++      char *name, *mem;
++ {
++   return (long) !strcmp (name, mem);
++ }
++ 
++ /* ARGSUSED */
++ static long int
++ ar_member_pos (desc, name, hdrpos, datapos, size, date, uid, gid, mode, mem)
++      int desc;
++      char *name;
++      long int hdrpos, datapos, size, date;
++      int uid, gid, mode;
++      char *mem;
++ {
++   if (!ar_name_equal (name, mem))
++     return 0;
++   return hdrpos;
++ }
++ 
++ /* Set date of member MEMNAME in archive ARNAME to current time.
++    Returns 0 if successful,
++    -1 if file ARNAME does not exist,
++    -2 if not a valid archive,
++    -3 if other random system call error (including file read-only),
++    1 if valid but member MEMNAME does not exist.  */
++ 
++ long
++ ar_member_touch (arname, memname)
++      char *arname, *memname;
++ {
++   /* CODE ME !!! */
++ 
++   return -3L;
++ }
++ 
++ #ifdef TEST
++ 
++ long int
++ describe_member (desc, name, hdrpos, datapos, size, date, uid, gid, mode)
++      int desc;
++      char *name;
++      long int hdrpos, datapos, size, date;
++      int uid, gid, mode;
++ {
++   extern char *ctime ();
++ 
++   printf ("Member %s: %ld bytes at %ld (%ld).\n", name, size, hdrpos, datapos);
++   printf ("  Date %s", ctime (&date));
++   printf ("  uid = %d, gid = %d, mode = 0%o.\n", uid, gid, mode);
++ 
++   return 0;
++ }
++ 
++ void
++ main (int argc, char **argv)
++ {
++   ar_scan (argv[1], describe_member);
++ }
++ 
++ 
++ void *
++ xmalloc (size_t size)
++ {
++   register void *ptr = malloc (size);
++ 
++   if (ptr == (void *)0)
++     fatal (2, "out of memory");
++ 
++   return(ptr);
++ }
++ 
++ void
++ fatal (int code, char *format, ... )
++ {
++   va_list arg_ptr;		/* variable-length arguments	*/
++   va_start (arg_ptr, format);
++ 
++   fprintf (stderr, "%s: fatal error: ", program_name);
++   vfprintf (stderr, format, arg_ptr);
++   fprintf (stderr, ".\n");
++   exit (code);
++ }
++ 
++ #endif /* TEST */
++ 
++ #if 0
++ 
++ /* Look alike to the portable directory functions.*/
++ 
++ struct _zipcontents
++ {
++   char *_z_entry;
++   struct _zipcontents *_z_next;
++ };
++ 
++ typedef struct _zipdesc
++ {
++   int zd_fd;				/* file handle */
++   int zd_access;			/* access mode (O_RDWR or O_RDONLY) */
++   struct _zipcontents *zd_contents;	/* root of the list of entries */
++   struct _zipcontents *zd_cp;		/* current entry */
++ } ZIP;
++ 
++ 
++ #define	rewindzip(zipp)	seekzip (zipp, 0L)
++ 
++ void seekzip (ZIP *zipp, long off);
++ long tellzip (ZIP *zipp);
++ ZIP *openzip (char *name);
++ void closezip (ZIP *zipp);
++ struct zip_header *readzip (ZIP *zipp);
++ 
++ void
++ seekzip (ZIP *zipp, long off)
++ {
++   /* CODE ME !!! */
++ 
++   return lseek (zipp->zd_fd, off, SEEK_SET);
++ 
++   /* better: seek() for name! */
++ }
++ 
++ long
++ tellzip (ZIP *zipp)
++ {
++   /* CODE ME !!! */
++ 
++   return tell (zipp->zd_fd);
++ }
++ 
++ /* Open the zipfile NAME, scan through the local headers and check with
++    the central directory for consistency.  Put the central directory
++    entries into the linked list rooted by zipp->zd_contents.  */
++ 
++ ZIP *
++ openzip (char *name)
++ {
++   ZIP *zipp;
++ 
++   zipp->zd_access = O_RDWR;	/* we might want to `touch' the archive  */
++   zipp->zd_fd = open (name, zipp->zd_access|O_BINARY);
++   if (zipp->zd_fd == -1)
++     {				/* at least, try to read the archive  */
++       zipp->zd_access = O_RDONLY;
++       zipp->zd_fd = open (name, zipp->zd_access|O_BINARY);
++       if (zipp->zd_fd == -1)
++ 	return NULL;
++     }
++ 
++   /* CODE ME !!! */
++ 
++   return zipp;
++ }
++ 
++ void
++ closezip (ZIP *zipp)
++ {
++   /* CODE ME !!! */
++ 
++   close (zipp->zd_fd);
++ }
++ 
++ struct zip_header *
++ readzip (ZIP *zipp)
++ {
++   /* CODE ME !!! */
++ }
++ 
++ #endif /* NEVER */
++ 
++ /* 
++  * Local Variables:
++  * mode:C
++  * ChangeLog:ChangeLog
++  * compile-command:cl -DTEST -W4 zipscan.c
++  * End:
++  */

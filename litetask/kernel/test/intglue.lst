@@ -1,0 +1,565 @@
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-1
+
+
+				; INTGLUE.ASM - Hardware interrupt 'glue' for L
+				iteTask
+				
+				; $Author:$
+				; $Date:$
+				; $Revision:$
+				
+				INCLUDE KERNEL.INC
+			     C	; KERNEL.INC - Common macros and constants for 
+				LiteTask kernel assembly code
+			     C	
+			     C	; $Author:$
+			     C	; $Date:$
+			     C	; $Revision:$
+			     C	
+			     C	.LIST
+				
+ = 0008				IRQ0OFFSET     EQU      8
+ = 0068				IRQ8OFFSET     EQU      70h-8
+				
+				EXTRN _panic:far
+				EXTRN _schedule:far
+				EXTRN _setVector:far
+				
+				PUBLIC _setIRQTrap
+				PUBLIC _clearIRQTrap
+				PUBLIC _chainIRQ
+				
+				DGROUP GROUP _DATA
+				
+ 0000				_DATA SEGMENT PUBLIC WORD 'DATA'
+				
+				; The interrupt stack pointer table
+ 0000  0010[			intStckTable dd 16 dup(0)
+	   00000000		
+			 ]	
+				
+				
+				; The user function callout table
+ 0040  0010[			intCallTable dd 16 dup(0)
+	   00000000		
+			 ]	
+				
+				
+				; The saved interrupt vector table
+ 0080  0010[			oldVectTable dd 16 dup(0)
+	   00000000		
+			 ]	
+				
+				
+				; The overrun protection flags & message
+ 00C0  0010[			intInProgress db 16 dup(-1)
+	   FF			
+			 ]	
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-2
+
+
+				
+ 00D0  49 6E 74 65 72 72	intOverrun    db 'Interrupt overrun', 0
+       75 70 74 20 6F 76	
+       65 72 72 75 6E 00	
+				
+ 00E2				_DATA ENDS
+				
+ 0000				_TEXT SEGMENT PUBLIC WORD 'CODE'
+				   ASSUME CS:_TEXT,DS:DGROUP
+				
+				; Interrupt entry points, each stores the IRQ n
+				o. in AX and jumps to HWINT
+				
+				INTENTRY MACRO arg
+				IRQ&arg:
+				      PUSH AX
+				      MOV AX,arg
+				      JMP SHORT HWINT
+				ENDM
+				
+				      INTENTRY 0
+ 0000                        1	IRQ0: 
+ 0000  50                    1	      PUSH AX 
+ 0001  B8 0000               1	      MOV AX,0 
+ 0004  EB 5A                 1	      JMP SHORT HWINT 
+				      INTENTRY 1
+ 0006                        1	IRQ1: 
+ 0006  50                    1	      PUSH AX 
+ 0007  B8 0001               1	      MOV AX,1 
+ 000A  EB 54                 1	      JMP SHORT HWINT 
+				      INTENTRY 2
+ 000C                        1	IRQ2: 
+ 000C  50                    1	      PUSH AX 
+ 000D  B8 0002               1	      MOV AX,2 
+ 0010  EB 4E                 1	      JMP SHORT HWINT 
+				      INTENTRY 3
+ 0012                        1	IRQ3: 
+ 0012  50                    1	      PUSH AX 
+ 0013  B8 0003               1	      MOV AX,3 
+ 0016  EB 48                 1	      JMP SHORT HWINT 
+				      INTENTRY 4
+ 0018                        1	IRQ4: 
+ 0018  50                    1	      PUSH AX 
+ 0019  B8 0004               1	      MOV AX,4 
+ 001C  EB 42                 1	      JMP SHORT HWINT 
+				      INTENTRY 5
+ 001E                        1	IRQ5: 
+ 001E  50                    1	      PUSH AX 
+ 001F  B8 0005               1	      MOV AX,5 
+ 0022  EB 3C                 1	      JMP SHORT HWINT 
+				      INTENTRY 6
+ 0024                        1	IRQ6: 
+ 0024  50                    1	      PUSH AX 
+ 0025  B8 0006               1	      MOV AX,6 
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-3
+
+
+ 0028  EB 36                 1	      JMP SHORT HWINT 
+				      INTENTRY 7
+ 002A                        1	IRQ7: 
+ 002A  50                    1	      PUSH AX 
+ 002B  B8 0007               1	      MOV AX,7 
+ 002E  EB 30                 1	      JMP SHORT HWINT 
+				      INTENTRY 8
+ 0030                        1	IRQ8: 
+ 0030  50                    1	      PUSH AX 
+ 0031  B8 0008               1	      MOV AX,8 
+ 0034  EB 2A                 1	      JMP SHORT HWINT 
+				      INTENTRY 9
+ 0036                        1	IRQ9: 
+ 0036  50                    1	      PUSH AX 
+ 0037  B8 0009               1	      MOV AX,9 
+ 003A  EB 24                 1	      JMP SHORT HWINT 
+				      INTENTRY 10
+ 003C                        1	IRQ10: 
+ 003C  50                    1	      PUSH AX 
+ 003D  B8 000A               1	      MOV AX,10 
+ 0040  EB 1E                 1	      JMP SHORT HWINT 
+				      INTENTRY 11
+ 0042                        1	IRQ11: 
+ 0042  50                    1	      PUSH AX 
+ 0043  B8 000B               1	      MOV AX,11 
+ 0046  EB 18                 1	      JMP SHORT HWINT 
+				      INTENTRY 12
+ 0048                        1	IRQ12: 
+ 0048  50                    1	      PUSH AX 
+ 0049  B8 000C               1	      MOV AX,12 
+ 004C  EB 12                 1	      JMP SHORT HWINT 
+				      INTENTRY 13
+ 004E                        1	IRQ13: 
+ 004E  50                    1	      PUSH AX 
+ 004F  B8 000D               1	      MOV AX,13 
+ 0052  EB 0C                 1	      JMP SHORT HWINT 
+				      INTENTRY 14
+ 0054                        1	IRQ14: 
+ 0054  50                    1	      PUSH AX 
+ 0055  B8 000E               1	      MOV AX,14 
+ 0058  EB 06                 1	      JMP SHORT HWINT 
+				      INTENTRY 15
+ 005A                        1	IRQ15: 
+ 005A  50                    1	      PUSH AX 
+ 005B  B8 000F               1	      MOV AX,15 
+ 005E  EB 00                 1	      JMP SHORT HWINT 
+				
+ 0060				HWINT:
+				      PUSHREGS                    ; Save remain
+				ing CPU registers
+ 0060  53                    1	   PUSH BX 
+ 0061  51                    1	   PUSH CX 
+ 0062  52                    1	   PUSH DX 
+ 0063  56                    1	   PUSH SI 
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-4
+
+
+ 0064  57                    1	   PUSH DI 
+ 0065  55                    1	   PUSH BP 
+ 0066  1E                    1	   PUSH DS 
+ 0067  06                    1	   PUSH ES 
+				
+ 0068  8C D2			      MOV DX,SS                   ; Save contex
+				t in DX:CX (odd I know :)
+ 006A  8B CC			      MOV CX,SP
+				
+ 006C  FB			      STI                         ; Turn those 
+				ol' ints back on..
+				
+ 006D  BB ---- R		      MOV BX,DGROUP               ; Restore DS 
+				for C code
+ 0070  8E DB			      MOV DS,BX
+				
+ 0072  8B D8			      MOV BX,AX                   ; Test for IR
+				Q overrun
+ 0074  FE 87 00C0 R		      INC BYTE PTR [BX+intInProgress]
+ 0078  74 11			      JZ SHORT IRQOK
+ 007A  53			      PUSH BX
+ 007B  1E			      PUSH DS                     ; Call kernel
+				 panic()
+ 007C  B8 00D0 R		      MOV AX,OFFSET intOverrun
+ 007F  50			      PUSH AX
+ 0080  9A 0000 ---- E		      CALL _panic
+ 0085  83 C4 04			      ADD SP,04
+ 0088  5B			      POP BX
+ 0089  EB 2D			      JMP SHORT restore
+				
+ 008B				IRQOK:
+ 008B  D1 E3			      SHL BX,1                    ; Map IRQ num
+				ber to table index
+ 008D  D1 E3			      SHL BX,1
+				                                  ; Switch to l
+				ocal interrupt stack
+ 008F  8E 97 0002 R		      MOV SS,WORD PTR [BX+intStckTable+02]
+ 0093  8B A7 0000 R		      MOV SP,WORD PTR [BX+intStckTable]
+				
+ 0097  52			      PUSH DX                     ; Save old co
+				ntext for later
+ 0098  51			      PUSH CX
+				
+ 0099  50			      PUSH AX                     ; Passing IRQ
+				 number as an argument..
+ 009A  FF 9F 0040 R		      CALL [BX+intCallTable]      ; Call C hand
+				ler for interrupt
+ 009E  0B C0			      OR AX,AX                    ; Test return
+				 value:
+ 00A0  74 0F			      JZ SHORT noSched            ;            
+				        0 => continue
+				
+ 00A2  9A 0000 ---- E		      CALL _schedule              ; Call using 
+				previously saved context DX:CX
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-5
+
+
+ 00A7  5B			      POP BX                      ; Restore IRQ
+				 number to BX
+ 00A8  83 C4 04			      ADD SP,04
+ 00AB  8E D2			      MOV SS,DX                   ; Switch to n
+				ew stack
+ 00AD  8B E0			      MOV SP,AX
+ 00AF  EB 07			      JMP SHORT restore
+				
+ 00B1				noSched:
+ 00B1  5B			      POP BX                      ; Restore IRQ
+				 number to BX
+ 00B2  59			      POP CX                      ; Switch back
+				 to original stack
+ 00B3  5A			      POP DX
+ 00B4  8E D2			      MOV SS,DX
+ 00B6  8B E1			      MOV SP,CX
+				
+ 00B8				restore:
+ 00B8  FE 8F 00C0 R		      DEC BYTE PTR [BX+intInProgress] ; Clear o
+				verrun protection flag
+				      RESTOREREGS                 ; Restore req
+				uired context
+ 00BC  07                    1	   POP ES 
+ 00BD  1F                    1	   POP DS 
+ 00BE  5D                    1	   POP BP 
+ 00BF  5F                    1	   POP DI 
+ 00C0  5E                    1	   POP SI 
+ 00C1  5A                    1	   POP DX 
+ 00C2  59                    1	   POP CX 
+ 00C3  5B                    1	   POP BX 
+ 00C4  58                    1	   POP AX 
+ 00C5  CF			      IRET
+				
+				; extern int far setIRQTrap(int irq, void far *
+				trap, void far *intStack);
+				
+ 00C6				_setIRQTrap PROC FAR
+ 00C6  55			      PUSH BP
+ 00C7  8B EC			      MOV BP,SP
+ 00C9  8B 46 06			      MOV AX,[BP+06]
+				      
+				CHECKIRQ MACRO arg
+				      MOV CX,OFFSET _TEXT:IRQ&arg
+				      CMP AX,arg
+				      JZ SHORT SetIRQ
+				ENDM
+				      CHECKIRQ 0
+ 00CC  B9 0000 R             1	      MOV CX,OFFSET _TEXT:IRQ0 
+ 00CF  3D 0000               1	      CMP AX,0 
+ 00D2  74 7F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 1
+ 00D4  B9 0006 R             1	      MOV CX,OFFSET _TEXT:IRQ1 
+ 00D7  3D 0001               1	      CMP AX,1 
+ 00DA  74 77                 1	      JZ SHORT SetIRQ 
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-6
+
+
+				      CHECKIRQ 2
+ 00DC  B9 000C R             1	      MOV CX,OFFSET _TEXT:IRQ2 
+ 00DF  3D 0002               1	      CMP AX,2 
+ 00E2  74 6F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 3
+ 00E4  B9 0012 R             1	      MOV CX,OFFSET _TEXT:IRQ3 
+ 00E7  3D 0003               1	      CMP AX,3 
+ 00EA  74 67                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 4
+ 00EC  B9 0018 R             1	      MOV CX,OFFSET _TEXT:IRQ4 
+ 00EF  3D 0004               1	      CMP AX,4 
+ 00F2  74 5F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 5
+ 00F4  B9 001E R             1	      MOV CX,OFFSET _TEXT:IRQ5 
+ 00F7  3D 0005               1	      CMP AX,5 
+ 00FA  74 57                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 6
+ 00FC  B9 0024 R             1	      MOV CX,OFFSET _TEXT:IRQ6 
+ 00FF  3D 0006               1	      CMP AX,6 
+ 0102  74 4F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 7
+ 0104  B9 002A R             1	      MOV CX,OFFSET _TEXT:IRQ7 
+ 0107  3D 0007               1	      CMP AX,7 
+ 010A  74 47                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 8
+ 010C  B9 0030 R             1	      MOV CX,OFFSET _TEXT:IRQ8 
+ 010F  3D 0008               1	      CMP AX,8 
+ 0112  74 3F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 9
+ 0114  B9 0036 R             1	      MOV CX,OFFSET _TEXT:IRQ9 
+ 0117  3D 0009               1	      CMP AX,9 
+ 011A  74 37                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 10
+ 011C  B9 003C R             1	      MOV CX,OFFSET _TEXT:IRQ10 
+ 011F  3D 000A               1	      CMP AX,10 
+ 0122  74 2F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 11
+ 0124  B9 0042 R             1	      MOV CX,OFFSET _TEXT:IRQ11 
+ 0127  3D 000B               1	      CMP AX,11 
+ 012A  74 27                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 12
+ 012C  B9 0048 R             1	      MOV CX,OFFSET _TEXT:IRQ12 
+ 012F  3D 000C               1	      CMP AX,12 
+ 0132  74 1F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 13
+ 0134  B9 004E R             1	      MOV CX,OFFSET _TEXT:IRQ13 
+ 0137  3D 000D               1	      CMP AX,13 
+ 013A  74 17                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 14
+ 013C  B9 0054 R             1	      MOV CX,OFFSET _TEXT:IRQ14 
+ 013F  3D 000E               1	      CMP AX,14 
+ 0142  74 0F                 1	      JZ SHORT SetIRQ 
+				      CHECKIRQ 15
+ 0144  B9 005A R             1	      MOV CX,OFFSET _TEXT:IRQ15 
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-7
+
+
+ 0147  3D 000F               1	      CMP AX,15 
+ 014A  74 07                 1	      JZ SHORT SetIRQ 
+				
+ 014C  B8 FFFF			      MOV AX,-1                   ; Oops, not a
+				 valid IRQ
+ 014F  8B D0			      MOV DX,AX
+ 0151  5D			      POP BP
+ 0152  CB			      RET
+				
+ 0153				SetIRQ:
+ 0153  8B D8			      MOV BX,AX                   ; Store user 
+				function & stack top in tables
+ 0155  D1 E3			      SHL BX,1
+ 0157  D1 E3			      SHL BX,1
+ 0159  8B 56 08			      MOV DX,[BP+08]
+ 015C  89 97 0040 R		      MOV WORD PTR [BX+intCallTable],DX
+ 0160  8B 56 0A			      MOV DX,[BP+10]
+ 0163  89 97 0042 R		      MOV WORD PTR [BX+intCallTable+02],DX
+ 0167  8B 56 0C			      MOV DX,[BP+12]
+ 016A  89 97 0000 R		      MOV WORD PTR [BX+intStckTable],DX
+ 016E  8B 56 0E			      MOV DX,[BP+14]
+ 0171  89 97 0002 R		      MOV WORD PTR [BX+intStckTable+02],DX
+ 0175  53			      PUSH BX                     ; We need thi
+				s index later...
+ 0176  0E			      PUSH CS                     ; Set the new
+				 interrupt vector
+ 0177  51			      PUSH CX
+ 0178  3D 0008			      CMP AX,8
+ 017B  7C 05			      JL SHORT SetLow
+ 017D  05 0068			      ADD AX,IRQ8OFFSET
+ 0180  EB 03			      JMP SHORT SetINT
+ 0182				SetLow:
+ 0182  05 0008			      ADD AX,IRQ0OFFSET
+ 0185				SetINT:
+ 0185  50			      PUSH AX
+ 0186  9A 0000 ---- E		      CALL _setVector
+ 018B  83 C4 06			      ADD SP,06
+ 018E  5B			      POP BX                      ; Restore ind
+				ex and save original vector
+ 018F  89 87 0080 R		      MOV WORD PTR [BX+oldVectTable],AX
+ 0193  89 97 0082 R		      MOV WORD PTR [BX+oldVectTable+02],DX
+ 0197  33 C0			      XOR AX,AX
+ 0199  5D			      POP BP
+ 019A  CB			      RET
+ 019B				_setIRQTrap ENDP
+				
+				; extern int far clearIRQTrap(int irq);
+				
+ 019B				_clearIRQTrap PROC FAR
+ 019B  55			      PUSH BP
+ 019C  8B EC			      MOV BP,SP
+ 019E  8B 46 06			      MOV AX,[BP+06]
+ 01A1  A9 FFF0			      TEST AX,0FFF0h              ; Check that 
+				only bits 0,1,2,3 are set
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-8
+
+
+ 01A4  74 05			      JZ SHORT ClearIRQ
+ 01A6  B8 FFFF			      MOV AX,-1
+ 01A9  5D			      POP BP
+ 01AA  CB			      RET
+				
+ 01AB				ClearIRQ:                         ; Put the pre
+				vious vector address back
+ 01AB  8B D8			      MOV BX,AX
+ 01AD  D1 E3			      SHL BX,1
+ 01AF  D1 E3			      SHL BX,1
+ 01B1  8B 8F 0082 R		      MOV CX,WORD PTR [BX+oldVectTable+02]
+ 01B5  51			      PUSH CX
+ 01B6  8B 8F 0080 R		      MOV CX,WORD PTR [BX+oldVectTable]
+ 01BA  51			      PUSH CX
+ 01BB  3D 0008			      CMP AX,8
+ 01BE  7C 05			      JL SHORT ClearLow
+ 01C0  05 0068			      ADD AX,IRQ8OFFSET
+ 01C3  EB 03			      JMP SHORT ClearINT
+ 01C5				ClearLow:
+ 01C5  05 0008			      ADD AX,IRQ0OFFSET
+ 01C8				ClearINT:
+ 01C8  50			      PUSH AX
+ 01C9  9A 0000 ---- E		      CALL _setVector
+ 01CE  83 C4 06			      ADD SP,06
+ 01D1  33 C0			      XOR AX,AX
+ 01D3  5D			      POP BP
+ 01D4  CB			      RET
+ 01D5				_clearIRQTrap ENDP
+				
+				; extern int far chainIRQ(int irq);
+				
+ 01D5				_chainIRQ   PROC FAR
+ 01D5  55			      PUSH BP
+ 01D6  8B EC			      MOV BP,SP
+ 01D8  8B 5E 06			      MOV BX,[BP+06]
+ 01DB  F7 C3 FFF0		      TEST BX,0FFF0h              ; Check that 
+				only bits 0,1,2,3 are set
+ 01DF  74 05			      JZ SHORT ChainIRQ
+ 01E1  B8 FFFF			      MOV AX,-1
+ 01E4  5D			      POP BP
+ 01E5  CB			      RET
+				
+ 01E6				ChainIRQ:
+ 01E6  D1 E3			      SHL BX,1
+ 01E8  D1 E3			      SHL BX,1
+ 01EA  9C			      PUSHF
+ 01EB  FF 9F 0080 R		      CALL [BX+oldVectTable]
+ 01EF  33 C0			      XOR AX,AX
+ 01F1  5D			      POP BP
+ 01F2  CB			      RET
+ 01F3				_chainIRQ ENDP
+				
+ 01F3				_TEXT ENDS
+				
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Page     1-9
+
+
+				END
+
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Symbols-1
+
+
+Macros:
+
+		N a m e			Lines
+
+CHECKIRQ . . . . . . . . . . . .  	   3
+INTENTRY . . . . . . . . . . . .  	   4
+INTFUNCTION  . . . . . . . . . .  	   8
+PUSHAXREGS . . . . . . . . . . .  	   2
+PUSHREGS . . . . . . . . . . . .  	   8
+RESTOREREGS  . . . . . . . . . .  	   9
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+DGROUP . . . . . . . . . . . . .  	GROUP
+  _DATA  . . . . . . . . . . . .  	00E2	WORD	PUBLIC	'DATA'
+_TEXT  . . . . . . . . . . . . .  	01F3	WORD	PUBLIC	'CODE'
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+CHAINIRQ . . . . . . . . . . . .  	L NEAR	01E6	_TEXT
+CLEARINT . . . . . . . . . . . .  	L NEAR	01C8	_TEXT
+CLEARIRQ . . . . . . . . . . . .  	L NEAR	01AB	_TEXT
+CLEARLOW . . . . . . . . . . . .  	L NEAR	01C5	_TEXT
+
+HWINT  . . . . . . . . . . . . .  	L NEAR	0060	_TEXT
+
+INTCALLTABLE . . . . . . . . . .  	L DWORD	0040	_DATA	Length = 0010
+INTINPROGRESS  . . . . . . . . .  	L BYTE	00C0	_DATA	Length = 0010
+INTOVERRUN . . . . . . . . . . .  	L BYTE	00D0	_DATA
+INTSTCKTABLE . . . . . . . . . .  	L DWORD	0000	_DATA	Length = 0010
+IRQ0 . . . . . . . . . . . . . .  	L NEAR	0000	_TEXT
+IRQ0OFFSET . . . . . . . . . . .  	NUMBER	0008	
+IRQ1 . . . . . . . . . . . . . .  	L NEAR	0006	_TEXT
+IRQ10  . . . . . . . . . . . . .  	L NEAR	003C	_TEXT
+IRQ11  . . . . . . . . . . . . .  	L NEAR	0042	_TEXT
+IRQ12  . . . . . . . . . . . . .  	L NEAR	0048	_TEXT
+IRQ13  . . . . . . . . . . . . .  	L NEAR	004E	_TEXT
+IRQ14  . . . . . . . . . . . . .  	L NEAR	0054	_TEXT
+IRQ15  . . . . . . . . . . . . .  	L NEAR	005A	_TEXT
+IRQ2 . . . . . . . . . . . . . .  	L NEAR	000C	_TEXT
+IRQ3 . . . . . . . . . . . . . .  	L NEAR	0012	_TEXT
+IRQ4 . . . . . . . . . . . . . .  	L NEAR	0018	_TEXT
+IRQ5 . . . . . . . . . . . . . .  	L NEAR	001E	_TEXT
+IRQ6 . . . . . . . . . . . . . .  	L NEAR	0024	_TEXT
+IRQ7 . . . . . . . . . . . . . .  	L NEAR	002A	_TEXT
+IRQ8 . . . . . . . . . . . . . .  	L NEAR	0030	_TEXT
+IRQ8OFFSET . . . . . . . . . . .  	NUMBER	0068	
+IRQ9 . . . . . . . . . . . . . .  	L NEAR	0036	_TEXT
+IRQOK  . . . . . . . . . . . . .  	L NEAR	008B	_TEXT
+Microsoft (R) Macro Assembler Version 5.10                  3/31/95 18:32:18
+                                                             Symbols-2
+
+
+
+MAXSTACK . . . . . . . . . . . .  	NUMBER	7FFE	
+MINSTACK . . . . . . . . . . . .  	NUMBER	0400	
+MINSTACKLEFT . . . . . . . . . .  	NUMBER	0020	
+
+NOSCHED  . . . . . . . . . . . .  	L NEAR	00B1	_TEXT
+
+OLDVECTTABLE . . . . . . . . . .  	L DWORD	0080	_DATA	Length = 0010
+
+RESTORE  . . . . . . . . . . . .  	L NEAR	00B8	_TEXT
+
+SETINT . . . . . . . . . . . . .  	L NEAR	0185	_TEXT
+SETIRQ . . . . . . . . . . . . .  	L NEAR	0153	_TEXT
+SETLOW . . . . . . . . . . . . .  	L NEAR	0182	_TEXT
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  intglue		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+_chainIRQ  . . . . . . . . . . .  	F PROC	01D5	_TEXT	Global	Length = 001E
+_clearIRQTrap  . . . . . . . . .  	F PROC	019B	_TEXT	Global	Length = 003A
+_panic . . . . . . . . . . . . .  	L FAR 	0000		External
+_schedule  . . . . . . . . . . .  	L FAR 	0000		External
+_setIRQTrap  . . . . . . . . . .  	F PROC	00C6	_TEXT	Global	Length = 00D5
+_setVector . . . . . . . . . . .  	L FAR 	0000		External
+
+
+    309 Source  Lines
+    438 Total   Lines
+     59 Symbols
+
+  47206 + 427222 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors

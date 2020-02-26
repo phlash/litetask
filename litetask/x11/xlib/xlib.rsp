@@ -1,0 +1,9 @@
+xlib.lib
++xlib.obj &
++xwindow.obj &
++xevents.obj &
++xcolors.obj &
++xdrawing.obj &
++xroot.obj &
++xutil.obj
+xlib.pub;

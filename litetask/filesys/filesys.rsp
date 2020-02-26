@@ -1,0 +1,5 @@
+filesys.lib
++filesys.obj &
++fat.obj &
++int24.obj
+filesys.pub;

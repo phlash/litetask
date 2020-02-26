@@ -1,0 +1,66 @@
+
+ Start  Stop   Length Name                   Class
+ 00000H 00701H 00702H _TEXT                  CODE
+ 00710H 00710H 00000H CONST                  CONST
+ 00710H 00710H 00000H _BSS                   BSS
+ 00710H 0095FH 00250H _DATA                  DATA
+ 00960H 00D5FH 00400H STACK                  STACK
+
+ Origin   Group
+ 0071:0   DGROUP
+
+  Address         Publics by Name
+
+ 0000:06B8       _biosCh
+ 0000:06E3       _biosKey
+ 0000:002A       _BIOSKeyFlags
+ 0000:06C8       _biosStr
+ 0000:02AA       _BIOSTests
+ 0000:05BF       _disableInts
+ 0000:05BD       _enableInts
+ 0000:0610       _inp
+ 0000:061B       _inpw
+ 0000:0624       _int86
+ 0000:05C1       _lockInts
+ 0000:054F       _main
+ 0000:0580       _newContext
+ 0000:05F8       _outp
+ 0000:0604       _outpw
+ 0000:0448       _portIOTests
+ 0071:0000       _psp
+ 0000:05CF       _setVector
+ 0071:0650       _stackEnd
+ 0000:05C5       _unlockInts
+ 0000:0000       __acrtused
+
+  Address         Publics by Value
+
+ 0000:0000       __acrtused
+ 0000:002A       _BIOSKeyFlags
+ 0000:02AA       _BIOSTests
+ 0000:0448       _portIOTests
+ 0000:054F       _main
+ 0000:0580       _newContext
+ 0000:05BD       _enableInts
+ 0000:05BF       _disableInts
+ 0000:05C1       _lockInts
+ 0000:05C5       _unlockInts
+ 0000:05CF       _setVector
+ 0000:05F8       _outp
+ 0000:0604       _outpw
+ 0000:0610       _inp
+ 0000:061B       _inpw
+ 0000:0624       _int86
+ 0000:06B8       _biosCh
+ 0000:06C8       _biosStr
+ 0000:06E3       _biosKey
+ 0071:0000       _psp
+ 0071:0650       _stackEnd
+
+Program entry point at 0000:0000
+
+Unresolved externals:
+
+
+TASKEXIT in file(s):
+ ..\..\MISCGLUE.OBJ(miscglue.asm)

@@ -1,0 +1,751 @@
+*** e:\tmp/RCSt1005284	Mon Sep 10 01:12:34 1990
+--- makefile	Sun Sep 09 17:57:54 1990
+***************
+*** 1,4 ****
+! # Copyright (C) 1988, 1989 Free Software Foundation, Inc.
+  # This file is part of GNU Make.
+  # 
+  # GNU Make is free software; you can redistribute it and/or modify
+--- 1,4 ----
+! ## Copyright (C) 1988, 1989 Free Software Foundation, Inc.
+  # This file is part of GNU Make.
+  # 
+  # GNU Make is free software; you can redistribute it and/or modify
+***************
+*** 28,39 ****
+  # MORE IMPORTANT:
+  # This port comes with ABSOLUTELY NO WARRANTY.
+  #
+! # $Header: e:/gnu/make/RCS/makefile.'v 3.58.0.10 90/07/24 10:19:16 tho Exp $
+  
+  #
+  #	Makefile for GNU Make
+  #
+  
+  BINDIR	= c:/bin
+  INSTALL	= cp
+  
+--- 28,40 ----
+  # MORE IMPORTANT:
+  # This port comes with ABSOLUTELY NO WARRANTY.
+  #
+! # $Header: e:/gnu/make/RCS/makefile.'v 3.58.0.11 90/08/27 02:57:13 tho Exp $
+  
+  #
+  #	Makefile for GNU Make
+  #
+  
++ VPATH	= d:/usr/lib;d:/usr/include
+  BINDIR	= c:/bin
+  INSTALL	= cp
+  
+***************
+*** 49,75 ****
+  
+  # Compiler configuration:
+  
+! defines = -DUSG -DNO_LDAV -DNO_FLOAT
+  
+  ifeq ($(BUILD),debug)
+! CFLAGS	= $(defines) -FPa -AL -Od -Zi -W4 -DSTDC_HEADERS
+  CRIPPLED_CFLAGS = $(CFLAGS)
+! LDFLAGS = /st:0x8000/map/co
+  else
+! CFLAGS	= $(defines) -FPa -AL -Ox -W4 -DSTDC_HEADERS
+! CRIPPLED_CFLAGS = $(defines) -FPa -AL -Od -W4 -DSTDC_HEADERS
+! LDFLAGS = /st:0x8000/map/e
+  endif
+  
+  # Files:
+  
+  # MS-DOS specific files (not in the GNU distribution)
+! DOSOBJ	= msd_dir.obj zipscan.obj
+! DOSSRC	= msd_dir.c zipscan.c
+  DOSINC	= msd_dir.h
+! SWAPOBJ	= swap.obj spawn.obj
+! SWAPSRC	= swap.c spawn.c
+! SWAPINC	=
+  
+  # If you don't want archive support, comment these out.
+  AROBJ	= ar.obj
+--- 50,77 ----
+  
+  # Compiler configuration:
+  
+! defines = -DUSG -DNO_LDAV -DNO_FLOAT -DSTDC_HEADERS -DSMART_SHELL -DUSE_XMS
+  
+  ifeq ($(BUILD),debug)
+! CFLAGS	= $(defines) -FPa -AL -Od -Zi -W4
+  CRIPPLED_CFLAGS = $(CFLAGS)
+! LDFLAGS = /st:0x8000/map/noe/co
+  else
+! CFLAGS	= $(defines) -FPa -AL -Ox -W4
+! CRIPPLED_CFLAGS = $(defines) -FPa -AL -Od -W4
+! LDFLAGS = /st:0x8000/map/noe/e
+  endif
+  
+  # Files:
+  
+  # MS-DOS specific files (not in the GNU distribution)
+! DOSOBJ	= msd_dir.obj _cwild.obj zipscan.obj
+! DOSSRC	= msd_dir.c _cwild.c zipscan.c
+  DOSINC	= msd_dir.h
+! SWAPLIB	= swaplibl.lib
+! SWAPOBJ	= swap.obj
+! SWAPSRC	= swap.c
+! SWAPINC	= swaplib.h
+  
+  # If you don't want archive support, comment these out.
+  AROBJ	= ar.obj
+***************
+*** 83,98 ****
+  DISTSRC	= $(DISTOBJ:.obj=.c) remote-s.c version.c
+  DISTINC	= commands.h dep.h file.h job.h make.h rule.h variable.h
+  
+! # Preserve the odering of object files!
+  # swap spawn ...
+  OBJS	= $(SWAPOBJ) $(DISTOBJ) $(AROBJ) $(DOSOBJ)
+! SRCS	= $(SWAPSRC) $(DISTSRC) $(ARSRC) $(DOSSRC)
+! INCS	= $(SWAPINC) $(DISTINC) $(ARINC) $(DOSINC)
+  
+  # Files for backup and patches:
+  RCSFILES= $(patsubst %, RCS/%'v, $(SRCS) $(INCS)) RCS/makefile.'v
+  MISC	= projects ChangeLog makepat mkpatch readme.dos make.dos
+- install: $(BINDIR)/make.exe
+  DISTFILES = $(patsubst %, dist/%, $(DISTSRC) $(ARSRC) $(DISTINC) $(ARINC))
+  DOSFILES = $(patsubst %, dos/%, $(SRCS) $(INCS) makefile)
+  
+--- 85,99 ----
+  DISTSRC	= $(DISTOBJ:.obj=.c) remote-s.c version.c
+  DISTINC	= commands.h dep.h file.h job.h make.h rule.h variable.h
+  
+! # Preserve the ordering of object files!
+  # swap spawn ...
+  OBJS	= $(SWAPOBJ) $(DISTOBJ) $(AROBJ) $(DOSOBJ)
+! SRCS	= $(DISTSRC) $(ARSRC) $(DOSSRC)
+! INCS	= $(DISTINC) $(ARINC) $(DOSINC)
+  
+  # Files for backup and patches:
+  RCSFILES= $(patsubst %, RCS/%'v, $(SRCS) $(INCS)) RCS/makefile.'v
+  MISC	= projects ChangeLog makepat mkpatch readme.dos make.dos
+  DISTFILES = $(patsubst %, dist/%, $(DISTSRC) $(ARSRC) $(DISTINC) $(ARINC))
+  DOSFILES = $(patsubst %, dos/%, $(SRCS) $(INCS) makefile)
+  
+***************
+*** 111,130 ****
+  
+  gnumake.exe: $(OBJS) version.c
+  	$(CC) $(CFLAGS) -c version.c
+! 	$(LINK) $(LDFLAGS) $(OBJS) version, $@;
+  
+  # Well, here optimization is dangerous... (inline assembler etc.)
+  swap.obj: swap.c
+! 	$(CC) $(CRIPPLED_CFLAGS) -c $*.c
+  
+  # MSC 6.0 bombs with `-Ox'
+! main.obj : main.c make.h commands.h dep.h file.h variable.h job.h
+! 	$(CC) $(CRIPPLED_CFLAGS) -c $*.c
+! 
+! # debugging
+! swap.exe: swap.c spawn.c
+! 	$(CC) $(CRIPPLED_CFLAGS) -DTEST -Zi -Fe$@ swap.c spawn.c
+! 	rm -f swap.obj spawn.obj
+  
+  
+  # Standard utilities:
+--- 112,126 ----
+  
+  gnumake.exe: $(OBJS) version.c
+  	$(CC) $(CFLAGS) -c version.c
+! 	$(LINK) $(LDFLAGS) $(OBJS) version setargv,$@,gnumake.map,$(SWAPLIB),
+  
+  # Well, here optimization is dangerous... (inline assembler etc.)
+  swap.obj: swap.c
+! 	$(CC) $(CRIPPLED_CFLAGS) -c $<
+  
+  # MSC 6.0 bombs with `-Ox'
+! main.obj : main.c make.h commands.h dep.h file.h variable.h job.h $(SWAPINC)
+! 	$(CC) $(CRIPPLED_CFLAGS) -c $<
+  
+  
+  # Standard utilities:
+***************
+*** 175,190 ****
+  
+  # Dependencies:
+  
+! ar.obj: make.h file.h 
+  commands.obj: make.h dep.h commands.h file.h variable.h job.h
+  default.obj: make.h rule.h dep.h file.h commands.h variable.h
+  dir.obj: make.h msd_dir.h
+  expand.obj: make.h commands.h file.h variable.h
+  file.obj: make.h commands.h dep.h file.h variable.h
+! function.obj: make.h variable.h dep.h commands.h job.h
+  glob.obj: msd_dir.h
+  implicit.obj: make.h rule.h dep.h file.h
+! job.obj: make.h commands.h job.h file.h variable.h
+  load.obj: make.h commands.h job.h
+  misc.obj: make.h dep.h
+  msd_dir.obj: msd_dir.h
+--- 171,186 ----
+  
+  # Dependencies:
+  
+! ar.obj: make.h file.h
+  commands.obj: make.h dep.h commands.h file.h variable.h job.h
+  default.obj: make.h rule.h dep.h file.h commands.h variable.h
+  dir.obj: make.h msd_dir.h
+  expand.obj: make.h commands.h file.h variable.h
+  file.obj: make.h commands.h dep.h file.h variable.h
+! function.obj: make.h variable.h dep.h commands.h job.h $(SWAPINC)
+  glob.obj: msd_dir.h
+  implicit.obj: make.h rule.h dep.h file.h
+! job.obj: make.h commands.h job.h file.h variable.h $(SWAPINC)
+  load.obj: make.h commands.h job.h
+  misc.obj: make.h dep.h
+  msd_dir.obj: msd_dir.h
+*** e:\tmp/RCSt1005284	Mon Sep 10 01:12:38 1990
+--- commands.c	Tue Sep 04 03:15:12 1990
+***************
+*** 30,36 ****
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/commands.c'v 3.58.0.3 90/07/18 22:23:13 tho Exp $
+   */
+  
+  #include "make.h"
+--- 30,36 ----
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/commands.c'v 3.58.0.4 90/08/27 01:24:46 tho Exp $
+   */
+  
+  #include "make.h"
+***************
+*** 41,47 ****
+  #include "job.h"
+  
+  #ifdef MSDOS			/* really ? */
+! #define	sigmask(signal)		signal
+  #endif /* MSDOS */
+  
+  #ifndef	sigmask
+--- 41,47 ----
+  #include "job.h"
+  
+  #ifdef MSDOS			/* really ? */
+! #define	sigmask(signal)		1
+  #endif /* MSDOS */
+  
+  #ifndef	sigmask
+***************
+*** 357,368 ****
+    new_job (file);
+  }
+  
+- #ifdef MSDOS
+- #define	PROPAGATED_SIGNAL_MASK	(sigmask (SIGINT))
+- #else /* not MSDOS */
+  #define	PROPAGATED_SIGNAL_MASK \
+    (sigmask (SIGTERM) | sigmask (SIGINT) | sigmask (SIGHUP) | sigmask (SIGQUIT))
+- #endif /* not MSDOS */
+  
+  /* Handle fatal signals.  */
+  
+--- 357,364 ----
+*** e:\tmp/RCSt1005284	Mon Sep 10 01:12:54 1990
+--- function.c	Sun Sep 09 21:59:06 1990
+***************
+*** 45,67 ****
+  #include <io.h>
+  #include <time.h>
+  #include <process.h>
+  
+  extern int last_child_pid;
+  extern int last_child_status;
+- 
+- extern int swap_and_spawnvpe (char *device, char *cmd, char **argv,
+- 			      char **envvec);
+- extern char *mktmpname (char *prefix);
+- 
+- struct stringlist
+-   {
+-     char **list;	/* Nil-terminated list of strings.  */
+-     unsigned int idx;	/* Index into above.  */
+-     unsigned int max;	/* Number of pointers allocated.  */
+-   };
+- 
+- extern struct stringlist *swapping_device;
+- 
+  #endif /* MSDOS */
+  
+  #ifndef MSDOS
+--- 45,54 ----
+  #include <io.h>
+  #include <time.h>
+  #include <process.h>
++ #include <swaplib.h>
+  
+  extern int last_child_pid;
+  extern int last_child_status;
+  #endif /* MSDOS */
+  
+  #ifndef MSDOS
+***************
+*** 363,369 ****
+    extern char **construct_command_argv ();
+    char **argv;
+    int save_stdout;
+!   char *pipe_file = mktmpname ("pi");
+    int pipe_fds;
+    char *buffer = (char *) xmalloc (201);
+    unsigned int maxlen = 200;
+--- 350,356 ----
+    extern char **construct_command_argv ();
+    char **argv;
+    int save_stdout;
+!   char *pipe_file = swap_mktmpname ("pi");
+    int pipe_fds;
+    char *buffer = (char *) xmalloc (201);
+    unsigned int maxlen = 200;
+***************
+*** 418,426 ****
+  
+        	last_child_pid = pid = abs ((int) clock());	/* reasonably random */
+  
+! 	last_child_status =
+! 	  swap_and_spawnvpe (swapping_device ? swapping_device->list[0] : NULL,
+! 			    argv[0], argv, environ);
+  
+  	dup2 (save_stdout, 1);			/* reset stdout */
+  	if (lseek (pipe_fds, 0L, SEEK_SET) == -1L)
+--- 405,411 ----
+  
+        	last_child_pid = pid = abs ((int) clock());	/* reasonably random */
+  
+! 	last_child_status = swap_spawnvpe (argv[0], argv, environ);
+  
+  	dup2 (save_stdout, 1);			/* reset stdout */
+  	if (lseek (pipe_fds, 0L, SEEK_SET) == -1L)
+*** e:\tmp/RCSt1005284	Mon Sep 10 01:13:16 1990
+--- job.c	Sun Sep 09 21:54:06 1990
+***************
+*** 30,36 ****
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/job.c'v 3.58.0.6 90/07/22 14:31:11 tho Exp $
+   */
+  
+  #include "make.h"
+--- 30,36 ----
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/job.c'v 3.58.0.7 90/08/27 01:24:50 tho Exp $
+   */
+  
+  #include "make.h"
+***************
+*** 56,76 ****
+  #include <process.h>
+  #include <io.h>
+  
+  int last_child_pid = 0;			/* no child started yet ... */
+  int last_child_status = 0;
+  
+- struct stringlist
+-   {
+-     char **list;	/* Nil-terminated list of strings.  */
+-     unsigned int idx;	/* Index into above.  */
+-     unsigned int max;	/* Number of pointers allocated.  */
+-   };
+- 
+- extern struct stringlist *swapping_device;
+- 
+- extern int swap_and_spawnvpe (char *device, char *cmd, char **argv,
+- 			      char **envvec);
+- 
+  #endif /* MSDOS */
+  
+  #if	defined(USG) && !defined(HAVE_VFORK)
+--- 56,66 ----
+  #include <process.h>
+  #include <io.h>
+  
++ #include <swaplib.h>
++ 
+  int last_child_pid = 0;			/* no child started yet ... */
+  int last_child_status = 0;
+  
+  #endif /* MSDOS */
+  
+  #if	defined(USG) && !defined(HAVE_VFORK)
+***************
+*** 657,670 ****
+    /* LAST_CHILD_STATUS and LAST_CHILD_PID will be used by our
+       (faked) wait for MS-DOS to bury this 'child' */
+  
+!   last_child_status
+!     = swap_and_spawnvpe (swapping_device ? swapping_device->list[0] : NULL,
+! 			argv[0], argv, child->environment);
+  
+    last_child_pid = child->pid;
+  
+    if (last_child_status == -1)
+! 	pfatal_with_name ("vm_spawnvp");
+  
+    child->file->command_state = cs_running;	/* in *some* sense ...  */
+  
+--- 647,658 ----
+    /* LAST_CHILD_STATUS and LAST_CHILD_PID will be used by our
+       (faked) wait for MS-DOS to bury this 'child' */
+  
+!   last_child_status = swap_spawnvpe (argv[0], argv, child->environment);
+  
+    last_child_pid = child->pid;
+  
+    if (last_child_status == -1)
+!     pfatal_with_name (argv[0]);
+  
+    child->file->command_state = cs_running;	/* in *some* sense ...  */
+  
+***************
+*** 1348,1363 ****
+  
+  #ifdef MSDOS
+  
+! /* fake a wait ... */
+  
+  int
+  wait (WAIT_T *status)
+   {
+!    int temp = last_child_pid;		/* the last child we spawned */
+!    *status = last_child_status << 8;	/* it's return code (not a signal) */
+!    last_child_pid = 0;			/* the only child ... */
+!    return temp;
+   }
+  
+  #endif	/* MSDOS */
+  
+--- 1336,1427 ----
+  
+  #ifdef MSDOS
+  
+! /* Here we fake a wait () ... */
+  
+  int
+  wait (WAIT_T *status)
+   {
+!    int pid = last_child_pid;
+! 
+!    /* Swap the high and low byte of the STATUS word:
+!       error codes > 256  (e.g. those generated by spawn_child ())
+!       will be interpreted as signals and cause the target to be
+!       deleted.  In any case, we mask off the coredump bit.  */
+! 
+!    *status = (last_child_status << 8) + ((last_child_status >> 8) & 0x7f);
+! 
+!    /* This was the only child .... */
+!    last_child_pid = 0;
+! 
+!    return pid;
+   }
++ 
++ /* Interface to swaplib.  */
++ 
++ #define DELIMITER ":"
++ static char *smart_programs (void);
++ 
++ int
++ swap_smart_p (char *name)
++ {
++   char *list = smart_programs ();
++   char *tok;
++ 
++   tok = strtok (list, DELIMITER);
++ 
++   while (tok && strcmp (tok, name))
++     tok = strtok (NULL, DELIMITER);
++ 
++   free (list);
++   return (tok != NULL);
++ }
++ 
++ char *
++ smart_programs (void)
++ {
++   struct variable *smart
++     = lookup_variable ("LONGARGS", sizeof ("LONGARGS") - 1);
++   char *string;
++ 
++   if (smart && smart->value)
++     {
++       string = (char *) xmalloc (strlen (smart->value) + 1);
++       strcpy (string, smart->value);
++     }
++   else
++     {
++       string = (char *) xmalloc (1);
++       strcpy (string, "");
++     }
++ 
++   return string;
++ }
++ 
++ 
++ enum swap_swapping_mode
++ swap_set_swapping_mode (char *cmd, char **argv)
++ {
++   /* Default to XMS.  */
++ 
++   enum swap_swapping_mode mode = xms;
++ 
++   struct variable *swapping
++     = lookup_variable ("SWAPPING", sizeof ("SWAPPING") - 1);
++ 
++   if (!swapping || !(swapping->value))
++     return mode;
++ 
++   if (strcmp ("xms", swapping->value) == 0)
++     mode = xms;
++   else if (strcmp ("ems", swapping->value) == 0)
++     mode = ems;
++   else if (strcmp ("disk", swapping->value) == 0)
++     mode = disk;
++   else if (strcmp ("none", swapping->value) == 0)
++     mode = none;
++ 
++   return mode;
++ }
+  
+  #endif	/* MSDOS */
+  
+*** e:\tmp/RCSt1005284	Mon Sep 10 01:13:32 1990
+--- main.c	Sun Sep 09 17:38:40 1990
+***************
+*** 29,35 ****
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/main.c'v 3.58.0.6 90/07/22 18:55:19 tho Exp $
+   */
+  
+  #include "make.h"
+--- 29,35 ----
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/main.c'v 3.58.0.7 90/08/27 01:25:08 tho Exp $
+   */
+  
+  #include "make.h"
+***************
+*** 43,52 ****
+  
+  #ifdef MSDOS
+  #include <process.h>
+  extern char *msdos_version_string;
+- extern int swap_and_spawnvpe (char *device, char *cmd, char **argv,
+- 			      char **envvec);
+- extern char *msdos_format_filename (char *name);
+  #endif /* MSDOS */
+  
+  extern char *version_string;
+--- 43,50 ----
+  
+  #ifdef MSDOS
+  #include <process.h>
++ #include <swaplib.h>
+  extern char *msdos_version_string;
+  #endif /* MSDOS */
+  
+  extern char *version_string;
+***************
+*** 244,256 ****
+  
+  static struct stringlist *new_files = 0;
+  
+- #ifdef MSDOS
+- /* String describing the swapping mode to be used.
+-    (one of "xms, ems, disk, none") */
+-  
+- struct stringlist *swapping_device = NULL;
+- #endif /* MSDOS */
+- 
+  /* The table of command switches.  */
+  
+  static struct command_switch switches[] =
+--- 242,247 ----
+***************
+*** 279,287 ****
+      { 'v', flag, (char *) &print_version_flag, 0, 0, 0, 0 },
+      { 'w', flag, (char *) &print_directory_flag, 1, 1, 0, 0 },
+      { 'W', string, (char *) &new_files, 0, 0, 0, 0 },
+- #ifdef MSDOS
+-     { 'x', string, (char *) &swapping_device, 0, 0, 0, 0 },
+- #endif /* MSDOS */
+      { '\0', ignore, 0, 0, 0, 0 }
+    };
+  
+--- 270,275 ----
+***************
+*** 410,419 ****
+  
+    /* Figure out where this program lives.  */
+  
+- #ifdef MSDOS			/* cosmetics */
+-   msdos_format_filename (argv[0]);
+- #endif /* MSDOS */
+- 
+    if (argv[0] == 0)
+      argv[0] = "";
+    if (argv[0][0] == '\0')
+--- 398,403 ----
+***************
+*** 435,445 ****
+  #endif
+    if (getwd (current_directory) == 0)
+      {
+- #ifdef MSDOS
+-       error ("getwd: %s", msdos_format_filename (current_directory));
+- #else /* not MSDOS */
+        error ("getwd: %s", current_directory);
+- #endif /* not MSDOS */
+        current_directory[0] = '\0';
+      }
+  #ifdef	USG
+--- 419,425 ----
+***************
+*** 909,916 ****
+  		break;
+  	      }
+  #ifdef MSDOS		/* MSC'c execve () will fail with our spawn(). */
+! 	  exit (swap_and_spawnvpe (swapping_device
+! 		? swapping_device->list[0] : NULL, argv[0], argv, environ));
+  #else /* not MSDOS */
+  	  exec_command (argv, environ,
+  			allocated_variable_expand ("$(PATH)"),
+--- 889,895 ----
+  		break;
+  	      }
+  #ifdef MSDOS		/* MSC'c execve () will fail with our spawn(). */
+! 	  exit (swap_spawnvpe (argv[0], argv, environ));
+  #else /* not MSDOS */
+  	  exec_command (argv, environ,
+  			allocated_variable_expand ("$(PATH)"),
+***************
+*** 1326,1332 ****
+  
+  #ifdef MSDOS
+    printf ("%sMS-DOS port (C) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>\n\
+! %sthis is an alpha version, compiled %s.\n\n",
+  	  precede, precede, msdos_version_string);
+  #endif /* MSDOS */
+  
+--- 1305,1311 ----
+  
+  #ifdef MSDOS
+    printf ("%sMS-DOS port (C) 1990 by Thorsten Ohl <td12@ddagsi3.bitnet>\n\
+! %sthis is a beta version, compiled %s.\n\n",
+  	  precede, precede, msdos_version_string);
+  #endif /* MSDOS */
+  
+***************
+*** 1439,1454 ****
+    block_children ();
+  #endif
+    if (getwd (pwdbuf) == 0)
+- #ifdef MSDOS
+-     printf ("an unknown directory (getwd: %s)\n",
+- 	    msdos_format_filename (pwdbuf));
+-   else
+-     printf ("directory `%s'\n", msdos_format_filename (pwdbuf));
+- #else /* not MSDOS */
+      printf ("an unknown directory (getwd: %s)\n", pwdbuf);
+    else
+      printf ("directory `%s'\n", pwdbuf);
+- #endif /* not MSDOS */
+  #ifdef	USG
+    unblock_children ();
+  #endif
+--- 1418,1426 ----
+*** e:\tmp/RCSt1005284	Mon Sep 10 01:13:40 1990
+--- misc.c	Tue Sep 04 03:19:04 1990
+***************
+*** 29,35 ****
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/misc.c'v 3.58.0.2 90/07/18 23:08:20 tho Exp $
+   */
+  
+  #include "make.h"
+--- 29,35 ----
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/misc.c'v 3.58.0.3 90/08/27 01:25:01 tho Exp $
+   */
+  
+  #include "make.h"
+***************
+*** 467,487 ****
+    return dep->name == 0 ? dep->file->name : dep->name;
+  }
+  #endif
+- 
+- 
+- #ifdef MSDOS
+- 
+- #include <ctype.h>
+- 
+- /* Filenames returned by MS-DOS system calls are formatted very ugly:
+-    all uppercase and backslashes.  Perform some cosmetics.  */
+- 
+- char *
+- msdos_format_filename (char *name)
+- {
+-   char *p = name;
+-   while (*p = (*p == '\\') ? '/' : tolower (*p))
+-     p++;
+-   return name;
+- }
+- #endif /* MSDOS */
+--- 467,469 ----
+*** e:\tmp/RCSt1005284	Mon Sep 10 01:14:24 1990
+--- make.h	Tue Sep 04 03:15:14 1990
+***************
+*** 29,35 ****
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/make.h'v 3.58.0.2 90/07/17 03:32:52 tho Exp $
+   */
+  
+  #include <signal.h>
+--- 29,35 ----
+   * MORE IMPORTANT:
+   * This port comes with ABSOLUTELY NO WARRANTY.
+   *
+!  * $Header: e:/gnu/make/RCS/make.h'v 3.58.0.3 90/08/27 01:25:24 tho Exp $
+   */
+  
+  #include <signal.h>
+***************
+*** 271,277 ****
+--- 271,282 ----
+  
+  #ifdef	USG
+  extern char *getcwd ();
++ #ifdef MSDOS
++ extern char *msdos_format_filename (char *name);
++ #define	getwd(buf)	msdos_format_filename (getcwd (buf, MAXPATHLEN - 2))
++ #else /* not MSDOS */
+  #define	getwd(buf)	getcwd (buf, MAXPATHLEN - 2)
++ #endif /* not MSDOS */
+  #else	/* Not USG.  */
+  extern char *getwd ();
+  #endif	/* USG.  */

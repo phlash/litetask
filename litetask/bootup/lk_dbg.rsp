@@ -1,0 +1,19 @@
+l9000:0 2 0 1
+a9000:2b
+db 'LITETASKEXE'
+
+mcs:100 lf000 9010:100
+rss
+8fc0
+rsp
+400
+rds
+9000
+rdx
+80
+rcs
+9010
+r
+dds:0 l200
+ucs:100
+q

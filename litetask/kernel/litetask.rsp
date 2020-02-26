@@ -1,0 +1,15 @@
+litetask.lib
++cstart.obj &
++main.obj &
++task.obj &
++timer.obj &
++idle.obj &
++traps.obj &
++debug.obj &
++intglue.obj &
++trapglue.obj &
++taskglue.obj &
++miscglue.obj &
++clib\clib.lib
+litetask.pub;
+

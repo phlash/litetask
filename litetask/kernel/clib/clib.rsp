@@ -1,0 +1,16 @@
+clib.lib
++memory.obj &
++bufpool.obj &
++setjmp.obj &
++bioslib.obj &
++textdrv.obj &
++string.obj &
++sprintf.obj &
++printk.obj &
++doprint.obj &
++semaphor.obj &
++getopts.obj &
++anldiv.obj &
++anlmul.obj &
++anlrem.obj
+clib.pub;

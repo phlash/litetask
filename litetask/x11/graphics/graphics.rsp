@@ -1,0 +1,5 @@
+graphics.lib
++vm18drv.obj &
++vm19drv.obj &
++dacregs.obj
+graphics.pub;

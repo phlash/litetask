@@ -1,0 +1,21 @@
+# MakeOpts - Options for building LITETASK
+
+# $Author:   Phlash  $
+# $Date:   24 Jun 1995 20:12:14  $
+# $Revision:   1.1  $
+
+# Tell PolyMake to check dates inside PVCS logfiles for these file types
+
+#.LOGFILE .c_v(.c)
+#.LOGFILE .h_v(.h)
+#.LOGFILE .asv(.asm)
+
+.asv.asm:
+	get -q -w $<($*.asm)
+
+# The compiler / assembler options
+
+COPTS=/AL /c /W3 /Od /Gs /Zl /I $(LITETASK)/include
+AOPTS=/mx
+
+# End.

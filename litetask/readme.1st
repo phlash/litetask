@@ -1,0 +1,38 @@
+LiteTask Development Work in Progress
+=====================================
+
+I have decided to name major builds after religions / religious icons, so
+after much contemplation (2 years infact:) we get:
+
+The 'Buddha' Release
+--------------------
+
+0) Re-organised C-Library (CLIB) & Kernel functions:
+   - Stand-alone CLIB (no kernel dependancies) & header (clib.h).
+   - All errors result in unique return codes (no LT_DBG macro calls).
+   - Interrupt & Port I/O routines moved into CLIB.
+   - Printk, Text Driver, Semaphore & Profiling routines moved into kernel.
+   - Re-worked heap management (avoiding task locking).
+   - Portable code (16-bit/MSC5.1 & 32-bit/DJGPP V2.0 initially).
+   - No special compiler keywords - default pointer sizes etc.
+
+1) *Much* less assembly in codebase (all 'C' except):
+   - Generic interrupt wrappers to avoid compiler specifics.
+   - Common register frame for all interrupts (including traps).
+   - Complete register set for saved contexts (better debugging).
+
+2) Restructured task switcher:
+   - Use of setjmp/longjmp to task switch (no assembly required).
+   - Remove stack pool for hardware interrupts (allows task switch
+     in interrupt - however the device driver *must* acknowledge
+     the interrupt to PIC/device before switching).
+   - Single 'C' callable entry point.
+   - Debugger callouts for tracing/timing task switches.
+
+3) Replacable task scheduler:
+   - Simple callout from task switcher when it wants a new task.
+   - Allows me to experiment with ideas for deterministic &
+     complex idle-time schedulers.
+   - Can provide very fast task switching with simple schemes.
+
+Phil.

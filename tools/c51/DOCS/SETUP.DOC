@@ -1,0 +1,303 @@
+
+			  SETUP.DOC File
+
+	   Setup Notes for Microsoft(R) C Optimizing Compiler
+			   Version 5.10
+
+	   (C)	Copyright Microsoft Corporation, 1987, 1988
+
+
+IMPORTANT: This document contains information about using the program
+SETUP.EXE to install Version 5.10 of the Microsoft(R) C Optimizing Compiler.
+Please read the entire document carefully before attempting to install this
+product.
+
+
+========================< What Is SETUP? >=====================================
+
+The program SETUP.EXE, found on the disk labeled "Setup Disk," can be used to
+install the entire compiler and supporting files for Version 5.10 of the
+Microsoft C Optimizing Compiler. You can also use it to build additional
+combined libraries without repeating the installation process. See "Combined
+Libraries" below, and the printed documentation, for more information about
+combined libraries.
+
+
+=======================< Starting SETUP.EXE >==================================
+
+To use the SETUP program, insert the disk labeled "Setup Disk" and go to
+the root directory of that disk. Enter a command in the following format:
+
+SETUP [/L]
+
+When you use SETUP to install this product for the first time, you should
+invoke SETUP without the /L option. If you use the /L option, SETUP builds
+combined libraries but does not copy the Version 5.10 files from the
+distribution disks to your disk. See "Building Libraries" below for more
+information about using the /L option.
+
+
+===========================< Using SETUP >=====================================
+
+SETUP is a full-screen interactive program. It asks you several questions
+about which files to copy to your hard disk, and where to put those files.
+For each question, SETUP supplies a default response enclosed in square
+brackets ([]). If the default response is satisfactory, you can choose it
+by pressing the ENTER key.
+
+If you want something other than the default response, enter your response
+at the cursor. As you type, SETUP checks each character for validity. If you
+type an invalid character, SETUP ignores the character and issues a warning
+beep. After you enter the response, SETUP checks the entire response for
+validity. If the response is invalid, SETUP issues a beep and displays an
+error message at the bottom of the screen, giving you another opportunity
+to respond.
+
+After you answer all of the questions, SETUP asks whether you wish to change
+any of your responses. If you answer by pressing Y, SETUP returns to the
+first question. To simplify the process of re-entering information, SETUP
+gives your previous response as the default response for each question.
+This allows you to move quickly through the list of questions to the response
+that you wish to change. You can also use this method to review each of your
+responses.
+
+
+===========================< Setup Options >===================================
+
+Some of the questions that SETUP asks have to do with the target operating
+environment(s), memory model(s), and floating-point method(s) that you plan
+to use. These subjects are explained in the printed documentation for this
+product.
+
+SETUP gives you the option to copy files that eliminate bugs with floating-
+point exceptions in IBM(R) PC-DOS 3.20 and MS-DOS 3.20, and a PTRACE problem
+with OS/2. These files are explained in the files PATCH320.DOC, PATCH87.DOC,
+and OS2PATCH.DOC, which are included in this release.
+
+SETUP asks whether it should copy all of the documentation (.DOC) files
+in this release onto your hard disk. It is recommended that you do so, since
+these files contain important information about this release. The files can
+be deleted after you read them.
+
+Before installing this product on a hard-disk system, you should make sure
+that your system has enough free space. See the section "Disk-Space
+Requirements" below for more information about how much free disk space is
+required for various configurations.
+
+
+========================< Naming Directories >=================================
+
+Once you press N to signal that your responses are correct, SETUP asks you to
+name the directories where you want to put the Version 5.10 files. These
+include the following directories.
+
+1.  The "bound binary" directory contains the compiler, linker, and other
+    programs that can run under both DOS and OS/2.
+
+2.  The "protected mode binary" directory contains run-time modules and
+    utilities that run only under OS/2 protected mode. SETUP asks you to
+    name this directory only if you previously requested protected-mode
+    support.
+
+3.  The "real mode binary" directory contains run-time modules and
+    utilities that run only under OS/2 real mode and DOS. SETUP asks you
+    to name this directory only if you previously requested real-mode support.
+
+4.  The "library" directory contains C library files, including the combined
+    libraries built by SETUP.
+
+5.  The "include" directory contains C include files for both the regular
+    C environment and the multiple-thread support library.
+
+6.  The "source" directory contains the Version 5.10 documentation files,
+    sample C files, start-up source files, and Microsoft CodeView(R) tutorial.
+
+
+Note that when SETUP suggests a default response for each of the installation
+directories, it uses the first path defined by the PATH environment variable
+in your environment.
+
+After you finish naming the destination directories, SETUP creates them if they
+do not already exist. If you specify an existing directory, SETUP will
+overwrite any files that have the same names as files that it copies into
+that directory.
+
+Once you have specified all of the directories, SETUP asks if you want to
+change any of the directory names. Again, press N to proceed with the
+installation process, or Y to change one or more responses. (Note that if you
+decide to change the name of a directory that you previously specified, SETUP
+does not delete that directory.)
+
+After you press N, SETUP copies files from the distribution disks to your
+hard disk, prompting you to insert each floppy disk as needed. It checks
+to make sure that you insert the correct disk and displays a message showing
+where it copies each file.
+
+
+========================< Combined Libraries >=================================
+
+After it finishes copying files from the distribution disks, SETUP creates
+one or more combined libraries, using the responses you gave concerning the
+target operating system(s), memory model(s), and floating-point math method(s)
+that you wish to use.
+
+A "combined library" is a file containing one or more component (individual)
+libraries. You can decrease link time dramatically by linking a single
+combined library instead of separately linking the component libraries that
+it contains.
+
+One of the questions that SETUP asks is whether you wish to delete the
+component libraries after SETUP has used them to build the combined library
+or libraries that you requested. In most cases you will want to delete the
+component libraries, since they occupy significant disk space, and they are
+not needed for linking once the combined library exists. After SETUP deletes
+component libraries, several non combined libraries remain on your hard disk.
+(GRAPHICS.LIB is an example.) Do not delete these remaining libraries; they
+are needed by other programs.
+
+
+=======================< Environment Variables >===============================
+
+The compiler and linker depend on several DOS environment variables to
+locate needed files. After you install Version 5.10, you need to set
+environment variables so that the compiler can find files in the directories
+that you specified when running SETUP. To simplify this process, SETUP
+automatically creates files containing commands that set these variables.
+One file is named NEW-VARS.BAT (for use in OS/2 real mode and DOS). The
+second file is named NEW-PATH.CMD (for use in OS/2 protected mode). SETUP
+places these files in the "real-mode binary" and "protected-mode binary"
+directories that you specified earlier in the setup process.
+
+Using NEW-VARS.BAT. You may run NEW-VARS.BAT directly as a batch file
+However, it is easier to copy the commands from NEW-VARS.BAT into the
+AUTOEXEC.BAT file in your root directory. In this way, the environment
+variables are set automatically whenever you boot in DOS or begin a new
+real-mode session in OS/2.
+
+Using NEW-PATH.CMD. You may run NEW-PATH.CMD directly as a batch file.
+However, it is more convenient to execute its commands automatically
+whenever you begin a new protected-mode session in OS/2. This can be done
+by placing the commands from NEW-PATH.CMD into the file that is automatically
+executed by the /K command in the PROTSHELL line of your CONFIG.SYS file.
+See the OS/2 documentation for more information about the PROTSHELL command
+and the CONFIG.SYS file.
+
+
+=======================< Buffers and Files >===================================
+
+The compiler requires a certain number of buffers and files to operate
+efficiently. These parameters are set with the CONFIG.SYS file. SETUP places
+the commands needed to select the right number of buffers and files in a
+file named NEW-CONF.SYS. Again, this file is placed in the "real-mode binary"
+directory that you specified earlier in the setup process.
+
+You should copy the commands from NEW-CONF.SYS into your existing CONFIG.SYS
+file (or create a new CONFIG.SYS file if none exists).
+
+
+Creating a Bound Compiler
+-------------------------
+
+This release includes two versions of the C Optimizing Compiler: one version
+for OS/2 protected mode, and another for DOS and OS/2 real mode. SETUP places
+the compilers in the directories that you request at setup time (see above).
+
+You can also create a bound version of the compiler that will run in both
+real and protected mode. To do this, execute the file BINDC.CMD (if you are
+currently running in OS/2 protected mode) or BINDC.BAT (if you are in DOS or
+OS/2 real mode). SETUP places these files in appropriate executable-file
+directories at setup time.
+
+If you type BINDC after SETUP is finished, the BINDC program prints a usage
+prompt and explains its operation in detail. You can run BINDC from any
+directory. However, it assumes that the files BIND.EXE and LINK.EXE are either
+in the current directory or in the path specified by the PATH environment
+variable. BINDC also assumes that the files API.LIB, DOSCALLS.LIB, and
+APILMR.OBJ are either in the current directory or in the path specified by the
+LIB environment variable.
+
+
+===================< Building Libraries (SETUP /L) >===========================
+
+After installing the Version 5.10 files on your hard disk, you may later
+decide that you need a different set of combined libraries. One way to
+do this is to build the libraries by hand, using the Microsoft Library
+Manager (LIB) utility and the list of libraries given in the printed
+documentation. A more convenient method, however, is to run SETUP with
+the /L option.
+
+If you supply the /L option when invoking SETUP, it creates combined
+libraries without repeating the installation process. If you need to
+copy files from a distribution disk, SETUP prompts you to insert each disk
+as needed, and copies only the files that it needs to create the combined
+library that you specify.
+
+In all other respects but for one, SETUP works just as it does when you
+install the compiler. That is, it asks you for the memory model, target
+operating environment, and floating-point method that characterize
+the combined library you wish to build. However, SETUP also allows for
+the possibility that you chose not to delete the component libraries
+used to build the original combined library. Thus, SETUP allows you to
+specify a directory, not only a floppy disk, as the source of the component
+libraries. The source directory can be the same directory where SETUP
+places the new combined library.
+
+If you specify a directory as the source of files, and SETUP cannot find
+a file that it needs, it prompts you to specify a new directory as the
+source. If the needed file no longer exists on your hard drive, you can
+specify a floppy disk as the source. Note, however, that once you begin
+reading from a floppy disk, you must allow SETUP to obtain all subsequent
+files from a floppy disk.
+
+
+======================< Disk-Space Requirements >==============================
+
+The amount of free disk space needed to install Version 5.10 depends on what
+configuration you choose when you run SETUP. This section describes the amount
+of disk space needed for several typical configurations.
+
+Minimal Real-Mode (DOS) Installation
+------------------------------------
+Approximately 3.3 megabytes of free space are required to perform a minimal
+installation for real-mode (DOS) development. This includes QuickC, all
+documentation files, no sample programs, no patch files, no start-up
+source files, three small-model combined libraries (with all math options). It
+assumes that you do not choose to retain component libraries after building
+combined libraries.
+
+Full Real-Mode (DOS) Installation
+---------------------------------
+Approximately 4.3 to 4.5 megabytes of free disk space are required for a full
+installation for real-mode (DOS) development. This includes QuickC, all
+documentation files, all sample programs, all patch files, and four combined
+libraries (two memory models and two math options, with GRAPHICS.LIB in the
+combined libraries).
+
+Minimal Protected-Mode Installation
+-----------------------------------
+Approximately 3.8 megabytes of free disk space are needed for a minimal
+installation for OS/2 protected-mode development. This includes no
+documentation files, no sample programs, no startup-source files, no patch
+files, and two combined libraries (two memory models and two math options).
+
+Full Protected-Mode Installation
+--------------------------------
+Approximately 4.5 megabytes of free space are required for a full installation
+for OS/2 protected-mode development. This includes all documentation files,
+all sample programs, all startup-source files, all patch files, and four
+combined libraries (two memory models and two math options).
+
+Dual-Mode Installation
+----------------------
+Approximately 5.3 megabytes of free space are required for minimal installation
+for dual-mode (real- and protected-mode) development. This includes no
+documentation files, no startup-source files, no patch files, and four
+combined libraries (real- and protected-mode versions of two memory models
+and one math option).
+
+If you choose to retain component libraries after you build combined libraries,
+the component libraries for each memory model and operating mode occupy about
+140 kilobytes each. Another 170-200 kilobytes is consumed by each additional
+combined library that you build (this assumes that you do not include
+GRAPHICS.LIB in the combined library). About 250-270 kilobytes is required
+for a real-mode combined library that includes GRAPHICS.LIB.

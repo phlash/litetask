@@ -1,0 +1,5 @@
+bios.lib
++int15.obj &
++bioscon.obj &
++biosdisk.obj
+bios.pub;

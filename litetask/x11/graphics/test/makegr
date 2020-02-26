@@ -1,0 +1,39 @@
+# Make file for CIRCLE tests
+
+all: circle1.exe circle2.exe ellip1.exe ellip2.exe
+
+circle1.exe : circle.obj drawcirc.obj fastcirc.obj
+   link circle drawcirc fastcirc,circle1,,graphics
+
+circle2.exe : circle.obj drawc2.obj
+   link circle drawc2,circle2,,graphics
+
+ellip1.exe : ellipse.obj drawelip.obj fastelip.obj
+   link ellipse drawelip fastelip,ellip1,,graphics
+
+ellip2.exe : ellipse.obj drawe2.obj
+   link ellipse drawe2,ellip2,,graphics
+
+circle.obj : circle.c
+   cl /c circle.c
+
+drawcirc.obj : drawcirc.c
+   cl /c drawcirc.c
+
+fastcirc.obj : fastcirc.asm
+   tasm /mx fastcirc;
+
+ellipse.obj : ellipse.c
+   cl /c ellipse.c
+
+drawelip.obj : drawelip.c
+   cl /c drawelip.c
+
+fastelip.obj : fastelip.asm
+   tasm /mx fastelip;
+
+drawc2.obj : drawc2.c
+   cl /c drawc2.c
+
+drawe2.obj : drawe2.c
+   cl /c drawe2.c

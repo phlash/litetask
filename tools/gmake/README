@@ -1,0 +1,86 @@
+# readme. - GNU make 3.58 for MS-DOS				-*-Text-*-
+# Copyright (C) 1990 by Thorsten Ohl, td12@ddagsi3.bitnet
+
+
+(created Tue Jul 24 00:56:56 1990 by ./mkpatch)
+     
+This file contains patches to compile GNU make v3.58 with
+Microsoft C 6.0 for MS-DOS.
+     
+To compile this program, you also need the complete GNU make sources for
+version 3.58.  These patches are for MSC v6.0, other compilers surely need
+some more work!
+     
+Copy this file and your GNU make v3.58 sources into a new directory,
+cd to it, and say
+     
+        rm makefile
+        patch < patches1
+	patch < patches2
+        make
+     
+That's all.
+     
+Please note that these patches (although distributed under the GNU General
+Public License) do NOT belong to the official GNU make distribution.
+     
+Of course the MS-DOS Version of GNU make comes with ABSOLUTELY NO WARRANTY.
+     
+You can reach me at <td12@ddagsi3.bitnet> for bug reports, etc. (but no
+promises).
+     
+Enjoy it!
+-Thorsten Ohl
+
+
+
+NOTES FOR THE SECOND SET OF PATCHES
+-----------------------------------
+
+These are the patches (w.r.t. the version which is already patched for
+MSDOS, i.e. patches for patches) for compiling GNU make with the new
+`swaplib'.
+
+      * spawn.c is superceedes by swaplibl.lib.
+      * swap.c is make obsolete by the new swap.c distributed with `swaplib'.
+
+      * the `-x' commandline switch has gone away.
+	use SWAPPING={xms,ems,disk} (either on the commandline or in the
+	makefile) instead.
+
+      * most important change:
+	you can now really interrupt a compilation!
+	The old make had the annoying "feature" that it responded to a
+	SIGINT by asking you to be patient and leaving the child alone.
+	(This was so because I was overly cautious about signals.)
+	Now the SIGINT is passed to the child  (via the standard
+	"stc; retf" mechanism) and a compilation will be interrupted
+	(during the next console I/O.
+
+      * `swaplib' corrects a few minor bugs of spawn.c in the respondfile
+	generation.  It should also provide better hooks for your own
+	respondfiles.
+
+      * EMS is now supported (not not tested extensively).
+
+      * The version message claims now that this is a "beta" version,
+	as there have been no bug reports.
+
+Enjoy
+-Thorsten
+
+For those of you who are interested: here's an excerpt from
+my `todo' file:
+
+      * enable the non-swapping mode
+
+      * zipscan.c: code ar_member_touch() (needs reversed dos_time() and
+	handling of the global directory)
+
+      * better support for short MS-DOS filenames ("gnumakefile" should
+	match "gnumakef", etc.), also take care of MS-DOS'
+	case-insensitivity
+
+      * replace default_include_directories by $INCLUDE
+
+
