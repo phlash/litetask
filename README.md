@@ -13,9 +13,10 @@ I have been unable to source the required version of Polytron VCS (PVCS) or Poly
 all the \*.??v files are useless (and I should remove from git at some point) and I have had to
 port each makefile to GNU make (thankfully I didn't do anything clever!)
 
- * clone this repo (eg: git clone https://github.com/phlash/litetask.git)
+ * Clone this repo (eg: git clone https://github.com/phlash/litetask.git)
  * Start Dosbox
- * mount the repo root folder as drive C: (eg: mount c /home/phlash/litetask)
+ * Mount the repo root folder as drive C: (eg: mount c /home/phlash/litetask)
+ * NB: you can do both from the command line, eg: dosbox /home/phlash/litetask
  * C:
  * SETUP.BAT - this just configures a few env vars
  * CD LITETASK
